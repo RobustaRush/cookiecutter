@@ -4,13 +4,9 @@ An agent skill to start new Django projects or extend existing ones. One sentenc
 
 ```
 /seedkit SaaS landing + waitlist, GDPR-friendly stack (mail, analytics, error reporting), VPS deploy
-```
 
-```
 /seedkit add proper auth — magic link, lockout on brute force, optional 2FA
-```
 
-```
 /seedkit look at our repo and tell us what's worth adding next
 ```
 
@@ -27,6 +23,10 @@ What you get:
 - **Plain Django, no lock-in:** The output is a normal Django project you own. No wrapper library, no runtime dependency on seedkit, nothing extra to upgrade later.
 - **Skip the generate–boot–fix grind:** The references distill 100+ hours of those cycles, so scaffolding runs clean on mid-tier Sonnet. Your frontier-model hours go to the code only you can write.
 
+<img src=".github/demo.gif" alt="One prompt in, a running Django project out" width="700">
+
+One prompt like the first produces [07-vps-sqlite-saas](https://github.com/viewflow/seedkit-examples/tree/main/07-vps-sqlite-saas): Docker + Caddy deploy, Sentry, Litestream backups, CI.
+
 Helps you with:
 
 - **Setup & config:** [Python deps & venvs](https://docs.astral.sh/uv/), [settings for dev vs prod](https://django-environ.readthedocs.io/), [custom user model](https://docs.djangoproject.com/en/stable/topics/auth/customizing/#substituting-a-custom-user-model).
@@ -41,10 +41,6 @@ Helps you with:
 - **Dev experience:** [request profiling](https://github.com/jazzband/django-silk), [auto browser reload](https://github.com/adamchainz/django-browser-reload), [pre-commit hooks](https://pre-commit.com/), [devcontainers](https://containers.dev/).
 - **Ops:** [scheduled DB backups](https://django-dbbackup.readthedocs.io/), [Docker for local dev](https://docs.docker.com/compose/), [auto-HTTPS reverse proxy](https://caddyserver.com/docs/), [managed deploys on Fly/Railway/Render](https://fly.io/docs/django/).
 - **CI/CD:** [CI pipeline](https://docs.github.com/en/actions), [deploy over SSH](https://github.com/appleboy/ssh-action).
-
-<img src=".github/demo.gif" alt="One prompt in, a running Django project out" width="700">
-
-One prompt like the first produces [07-vps-sqlite-saas](https://github.com/viewflow/seedkit-examples/tree/main/07-vps-sqlite-saas): Docker + Caddy deploy, Sentry, Litestream backups, CI.
 
 ## Install
 
