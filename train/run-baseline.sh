@@ -233,6 +233,7 @@ for tc in "${FILES[@]}"; do
 
     export -f cli_dispatch _cli_sink
     PROMPT="$prompt" CASE_LOG="$log" CASE_MODEL="$MODEL" CASE_CLI="$BASELINE_CLI" \
+    CASE_DENY="$GENERATION_DENY" \
     run_watched "$TIMEOUT_PER_CASE" "$name" setsid_exec bash -c 'cli_dispatch'
     rc=$RUN_WATCHED_RC
 

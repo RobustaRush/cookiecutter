@@ -209,6 +209,10 @@ link_skill() {
 # invocation + JSON parsing lives in agents.sh's cli_dispatch().
 run_phase() {
     local label=$1 cli=$2 model=$3 cwd=$4 log_target=$5 allowed_tools=$6
+    # Generation phases only — review/scorecard use an allowlist that
+    # already excludes git.
+    local case_deny=""
+    [[ -z "$allowed_tools" ]] && case_deny="$GENERATION_DENY"
     local prompt
     prompt=$(cat)
 
@@ -234,7 +238,7 @@ $prompt"
 
     export -f cli_dispatch _cli_sink
     PROMPT="$prompt" CASE_LOG="$log_target" CASE_MODEL="$model" \
-    CASE_TOOLS="$allowed_tools" CASE_CLI="$cli" \
+    CASE_TOOLS="$allowed_tools" CASE_CLI="$cli" CASE_DENY="$case_deny" \
     run_watched "$TIMEOUT_PER_PHASE" "$label" setsid_exec bash -c 'cli_dispatch'
     local rc=$RUN_WATCHED_RC
 
@@ -269,6 +273,11 @@ for tc in "${FILES[@]}"; do
     deploy_section=$(extract_section "$tc" "Deploy check")
     {
         printf '%s\n\n' "$prompt_section"
+        # Symmetric with the control arm, which is told the same thing. The
+        # build agent works in $WORKSPACE, where earlier cases' projects sit
+        # — reading them turns the case into a copy job. Denying git closes
+        # one route to the same outputs; this closes the rest.
+        printf 'Work only inside the project directory you create for this task. Do not read, list, or reference sibling directories in the parent — they hold unrelated projects from earlier runs, and looking at them would bias the output.\n\n'
         if [[ -n "$boot_section" ]]; then
             printf 'After scaffolding completes, run these runtime smoke checks. Auto-fix any failure (the goal is a project that boots and the smoke pipeline returns clean):\n\n'
             printf '%s\n\n' "$boot_section"

@@ -20,12 +20,12 @@ LLMs write Django from memory. That memory is a year or two old. Think deprecate
 
 What you get:
 
-- **Current APIs, not model memory.** References come from package docs; version pins re-resolve at generation time. Nothing goes stale the way an unmaintained starter template does.
-- **Tested output.** Nine end-to-end scenarios: generate, boot, smoke-check, audit by a second LLM ([see the outputs](https://github.com/viewflow/seedkit-examples)). We fix every failure back into the skill.
-- **Works on the project you already have.** Generators only start from zero. `/seedkit add [feature]` wires a new package into a live repo: deps, settings, `.env` example, the CI step.
-- **Your exact stack, not a preset.** A cookiecutter hands you its choices, and you spend day one deleting. Here you pick: Celery or RQ, allauth or magic links, VPS or Fly. You get only the code for the options you picked.
-- **Plain Django, no lock-in.** The output is a normal Django project you own. No wrapper library, no runtime dependency on seedkit, nothing extra to upgrade later.
-- **Skip the generate–boot–fix grind.** The references distill 100+ hours of those cycles, so scaffolding runs clean on mid-tier Sonnet. Your frontier-model hours go to the code only you can write.
+- **Current APIs, not model memory:** References come from package docs; version pins re-resolve at generation time. Nothing goes stale the way an unmaintained starter template does.
+- **Tested output:** Nine end-to-end scenarios: generate, boot, smoke-check, audit by a second LLM ([see the outputs](https://github.com/viewflow/seedkit-examples)). We fix every failure back into the skill.
+- **Works on the project you already have:** Generators only start from zero. `/seedkit add [feature]` wires a new package into a live repo: deps, settings, `.env` example, the CI step.
+- **Your exact stack, not a preset:** A cookiecutter hands you its choices, and you spend day one deleting. Here you pick: Celery or RQ, allauth or magic links, VPS or Fly. You get only the code for the options you picked.
+- **Plain Django, no lock-in:** The output is a normal Django project you own. No wrapper library, no runtime dependency on seedkit, nothing extra to upgrade later.
+- **Skip the generate–boot–fix grind:** The references distill 100+ hours of those cycles, so scaffolding runs clean on mid-tier Sonnet. Your frontier-model hours go to the code only you can write.
 
 Helps you with:
 
@@ -73,8 +73,6 @@ Then, in whatever empty directory you'd like to populate:
 
 ## Project Status
 
-Each failure the test scenarios surface becomes a reference fix, so each release scaffolds better than the last.
-
 Verification runs on Claude Sonnet today. Other models (Opus, Haiku, GPT, Gemini) and the production deploy targets (VPS, Fly, GitHub-SSH) are wired up but less traveled. Hit something odd there — or anywhere — [open an issue](https://github.com/viewflow/seedkit/issues/new): bug reports go straight into the test loop and come out as fixes.
 
 ## Contributing
@@ -82,8 +80,8 @@ Verification runs on Claude Sonnet today. Other models (Opus, Haiku, GPT, Gemini
 A person reading the output catches what automated tests can't.
 
 - **Hit a bug or something odd?** [Open an issue](https://github.com/viewflow/seedkit/issues/new). Even a one-line "this broke" helps.
-- **Run it on another model.** We verify on Claude Sonnet. Point `train/run-tests.sh` at Opus, Haiku, GPT, or Gemini and share the logs; cross-model coverage is what we need most.
-- **Read the output before you trust it.** It boots and passes smoke checks, but hasn't seen production. Your review is part of the loop.
+- **Run it on another model:** We verify on Claude Sonnet. Point `train/run-tests.sh` at Opus, Haiku, GPT, or Gemini and share the logs; cross-model coverage is what we need most.
+- **Read the output before you trust it:** It boots and passes smoke checks, but hasn't seen production. Your review is part of the loop.
 
 For anything bigger, open an issue first so we can talk it through. Full test cycles take a couple hours, so it's worth saving each other the wasted run.
 

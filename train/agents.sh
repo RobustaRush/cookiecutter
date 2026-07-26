@@ -38,6 +38,15 @@
 # `--settings ""`.
 export CLAUDE_HARNESS_SETTINGS='{"advisorModel":""}'
 
+# Deny list for GENERATION phases (build + baseline), passed as CASE_DENY.
+# The build agent works in $WORKSPACE, a git repo holding every previously
+# generated project — `git log` / `git show` hand it earlier outputs to copy
+# from, which is not what the case is meant to measure. Deny rules win over
+# --dangerously-skip-permissions (checked against the installed binary).
+#
+# NOT applied to review-logs.sh: its prompt commits and pushes.
+export GENERATION_DENY='Bash(git:*)'
+
 # Portable setsid via Python — macOS ships no `setsid` binary. Puts the
 # exec'd process in its own session/process group so a watchdog can kill
 # the whole tree with `kill -- -$pgid`.
@@ -170,6 +179,13 @@ extract_section() {
 #   CASE_CLI    claude | codex | agy
 #   CASE_MODEL  model id/name; empty means "let the CLI pick its default"
 #   PROMPT      the full prompt text
+#   CASE_DENY   claude-only: --disallowedTools value, applied to the
+#               build/full-bypass path. Deny rules win over
+#               --dangerously-skip-permissions (checked against the
+#               installed binary). Opt-in per caller: run-tests.sh and
+#               run-baseline.sh set GENERATION_DENY to keep the build
+#               agent out of git; review-logs.sh must NOT, because its
+#               own prompt commits and pushes.
 #   CASE_TOOLS  claude-only: --allowedTools value. When set, claude runs
 #               in the read-only reviewer mode instead of full-bypass —
 #               this is the ONLY per-CLI mode switch in the harness today
@@ -192,10 +208,13 @@ cli_dispatch() {
                     --output-format stream-json --include-partial-messages \
                     --print --verbose
             else
+                local -a deny=()
+                [[ -n "${CASE_DENY:-}" ]] && deny=(--disallowedTools "$CASE_DENY")
                 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 \
                 claude -p "$PROMPT" --model="$CASE_MODEL" \
                     --dangerously-skip-permissions \
                     --settings "$CLAUDE_HARNESS_SETTINGS" \
+                    "${deny[@]}" \
                     --output-format stream-json --include-partial-messages \
                     --print --verbose
             fi \
