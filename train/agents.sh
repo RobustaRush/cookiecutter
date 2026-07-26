@@ -18,6 +18,26 @@
 #   agy    — `--print PROMPT` has no JSON/streaming mode; it prints the
 #            final response as plain text once the turn completes.
 
+# Settings overlay applied to every claude invocation, for the same reason
+# as CLAUDE_CODE_DISABLE_AUTO_MEMORY: operator config must not shape a
+# harness run.
+#
+#   advisorModel — a user setting. On a machine that sets it (`opus` here),
+#   the build agent can consult a stronger model on demand. That makes the
+#   `model` column a lie for both arms, and in the CONTROL arm the advisor
+#   supplies exactly the Django scaffolding guidance the skill does,
+#   compressing the gap the baseline exists to measure.
+#
+# `--disallowedTools advisor` does NOT work — the advisor isn't a
+# permission-system tool, and the CLI answers "deny rule matches no known
+# tool". Blanking the setting is what actually removes it from the tool
+# list (verified against the installed binary; `null` does not work, it
+# reads as unset and falls back to the user value).
+# Exported: cli_dispatch runs inside `setsid_exec bash -c 'cli_dispatch'`,
+# so a plain shell var would not cross into it and claude would receive
+# `--settings ""`.
+export CLAUDE_HARNESS_SETTINGS='{"advisorModel":""}'
+
 # Portable setsid via Python — macOS ships no `setsid` binary. Puts the
 # exec'd process in its own session/process group so a watchdog can kill
 # the whole tree with `kill -- -$pgid`.
@@ -168,12 +188,14 @@ cli_dispatch() {
                 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 \
                 claude -p "$PROMPT" --model="$CASE_MODEL" \
                     --allowedTools "$CASE_TOOLS" \
+                    --settings "$CLAUDE_HARNESS_SETTINGS" \
                     --output-format stream-json --include-partial-messages \
                     --print --verbose
             else
                 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 \
                 claude -p "$PROMPT" --model="$CASE_MODEL" \
                     --dangerously-skip-permissions \
+                    --settings "$CLAUDE_HARNESS_SETTINGS" \
                     --output-format stream-json --include-partial-messages \
                     --print --verbose
             fi \
