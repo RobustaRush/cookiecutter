@@ -120,8 +120,8 @@ MSG
     fi
 }
 
-mkdir -p "$LOGS" "$BASELINE_ROOT"
 acquire_workspace_lock "$WORKSPACE"
+mkdir -p "$LOGS" "$BASELINE_ROOT"
 unlink_skill
 assert_skill_unreachable "$BASELINE_ROOT"
 [[ -f "$SCORECARD" ]] || { echo "scorecard not found: $SCORECARD" >&2; exit 1; }

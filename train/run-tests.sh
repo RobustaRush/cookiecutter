@@ -69,6 +69,7 @@ if command -v caffeinate >/dev/null; then
     caffeinate -i -w $$ &
 fi
 
+acquire_workspace_lock "$WORKSPACE"
 mkdir -p "$LOGS"
 [[ -f "$SCORECARD" ]] || { echo "scorecard not found: $SCORECARD" >&2; exit 1; }
 
@@ -268,7 +269,6 @@ $prompt"
     return "$rc"
 }
 
-acquire_workspace_lock "$WORKSPACE"
 link_skill
 
 for tc in "${FILES[@]}"; do
