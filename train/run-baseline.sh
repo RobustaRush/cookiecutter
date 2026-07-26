@@ -121,6 +121,7 @@ MSG
 }
 
 mkdir -p "$LOGS" "$BASELINE_ROOT"
+acquire_workspace_lock "$WORKSPACE"
 unlink_skill
 assert_skill_unreachable "$BASELINE_ROOT"
 [[ -f "$SCORECARD" ]] || { echo "scorecard not found: $SCORECARD" >&2; exit 1; }
@@ -242,6 +243,7 @@ for tc in "${FILES[@]}"; do
     build_duration=$(( $(date +%s) - start ))
     tool_calls_build=$(count_tool_calls "$log")
     assert_agent_ran "$log" "baseline $name"
+    assert_phase_ok "$rc" "$log" "baseline $name"
 
     # ── Scorecard — the arm-neutral rubric both arms are graded on ────
     {
@@ -254,6 +256,7 @@ for tc in "${FILES[@]}"; do
     CASE_TOOLS="Read,Grep,Glob,Bash(ls:*),Bash(cat:*),Bash(rg:*),Bash(find:*)" CASE_CLI="claude" \
     run_watched 1800 "$name-scorecard" setsid_exec bash -c 'cli_dispatch'
     popd >/dev/null
+    assert_phase_ok "$RUN_WATCHED_RC" "$log" "scorecard $name"
 
     duration=$(( $(date +%s) - start ))
     score=$(scorecard_value "$log"); score=${score:--}

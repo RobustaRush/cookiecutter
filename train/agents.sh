@@ -294,7 +294,7 @@ count_tool_calls() {
 # a case after a skill fix must UPDATE its row — appending would leave the
 # stale row next to the new one and every comparison would read both. Keeps
 # the body sorted so the committed file diffs cleanly.
-RESULTS_HEADER=$'case\tarm\tcli\tmodel\tboot_rc\tscore\tbuild_s\ttool_calls\trun_at'
+RESULTS_HEADER=$'case\tarm\tcli\tmodel\tcli_rc\tscore\tbuild_s\ttool_calls\trun_at'
 upsert_result() {
     local tsv=$1 case_name=$2 arm=$3 row=$4 tmp body
     tmp="$(mktemp)"
@@ -307,6 +307,25 @@ upsert_result() {
     { printf '%s\n' "$RESULTS_HEADER"; sort -t$'\t' -k1,1 -k2,2 "$body"; } > "$tmp"
     mv "$tmp" "$tsv"
     rm -f "$body"
+}
+
+# acquire_workspace_lock <dir>
+#
+# One harness script per workspace. run-tests.sh finds each case's project by
+# mtime, so a second script writing the same tree makes a sibling look like
+# this case's output — that is how 04-media-vault's scorecard came to grade
+# 02-shop. `mkdir` is the atomic test-and-set; macOS has no `flock` binary.
+acquire_workspace_lock() {
+    # Global, not local: the EXIT trap fires long after this function has
+    # returned, so a local would be out of scope and the lock would leak.
+    HARNESS_LOCK="$1/.harness-lock"
+    if ! mkdir "$HARNESS_LOCK" 2>/dev/null; then
+        printf '\n  Workspace is locked by another harness run: %s\n' "$HARNESS_LOCK" >&2
+        printf '  Wait for it to finish, or remove the directory if it is stale.\n\n' >&2
+        exit 4
+    fi
+    printf '%s\n' "$$" > "$HARNESS_LOCK/pid"
+    trap 'rm -rf "$HARNESS_LOCK"' EXIT
 }
 
 # assert_agent_ran <log> <label>
@@ -329,6 +348,30 @@ assert_agent_ran() {
     } >> "$log"
     printf '\n  ABORTED: %s made no tool calls — the agent never ran.\n' "$label" >&2
     printf '  Usually a session/usage limit. The CLI said:\n\n' >&2
+    tail -n 15 "$log" | sed 's/^/    /' >&2
+    printf '\n  No result row written. Re-run this case once the limit resets.\n\n' >&2
+    exit 3
+}
+
+# assert_phase_ok <rc> <log> <label>
+#
+# The companion to assert_agent_ran, for the cutoff it can't see: an agent
+# that worked for 200 tool calls and then lost its connection. `claude -p`
+# exits 0 whenever the agent completes its turn, whatever it concluded about
+# the project — a project that won't boot still exits 0 and shows up in the
+# score. So a non-zero exit is the CLI failing, never a build result, and
+# recording one is recording an API outage as an experimental outcome.
+assert_phase_ok() {
+    local rc=$1 log=$2 label=$3
+    [[ $rc -eq 0 ]] && return 0
+    {
+        echo
+        echo "════════ ABORTED ════════"
+        echo "$label exited $rc — the CLI failed, so this is not a build result."
+        echo "No result row written; remaining cases skipped."
+    } >> "$log"
+    printf '\n  ABORTED: %s exited %s.\n' "$label" "$rc" >&2
+    printf '  The CLI failed mid-phase (usually a session/usage limit). It said:\n\n' >&2
     tail -n 15 "$log" | sed 's/^/    /' >&2
     printf '\n  No result row written. Re-run this case once the limit resets.\n\n' >&2
     exit 3

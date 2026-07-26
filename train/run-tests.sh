@@ -148,8 +148,30 @@ prepend_prompt_to_readme() {
     local prompt
     prompt=$(extract_prompt_block "$tc")
     [[ -n "$prompt" ]] || return 0
+    # Strip prompt blocks this function added on an earlier run before
+    # prepending the current one, so a README can't accumulate a stack of
+    # them. Self-healing on purpose: a re-run repairs a README that a
+    # previous run left with the wrong case's prompt on top.
     local existing=""
-    [[ -f "$readme" ]] && existing=$(cat "$readme")
+    [[ -f "$readme" ]] && existing=$(awk '
+        { line[NR] = $0 }
+        END {
+            i = 1
+            # Skip every leading block this function wrote on an earlier run:
+            # heading, fenced prompt, blank(s), `---`, blank(s).
+            while (i <= NR && line[i] ~ /^## Prompt[[:space:]]*$/) {
+                i++
+                while (i <= NR && line[i] !~ /^```/) i++
+                i++
+                while (i <= NR && line[i] !~ /^```/) i++
+                i++
+                while (i <= NR && line[i] ~ /^[[:space:]]*$/) i++
+                if (i <= NR && line[i] ~ /^---[[:space:]]*$/) i++
+                while (i <= NR && line[i] ~ /^[[:space:]]*$/) i++
+            }
+            for (; i <= NR; i++) print line[i]
+        }
+    ' "$readme")
     {
         echo "## Prompt"
         echo
@@ -246,6 +268,7 @@ $prompt"
     return "$rc"
 }
 
+acquire_workspace_lock "$WORKSPACE"
 link_skill
 
 for tc in "${FILES[@]}"; do
@@ -293,11 +316,15 @@ for tc in "${FILES[@]}"; do
     } | run_phase "BUILD" "$BUILD_CLI" "$MODEL" "$WORKSPACE" "$log" ""
     build_rc=$?
 
-    # Locate the generated project: any subdir with files newer than the
-    # marker, excluding the logs dir.
+    # Locate the generated project: a subdir newer than the marker AND
+    # carrying this case's `NN-` prefix. The prefix is what makes the match
+    # deterministic — `-newer` alone also matches a sibling that something
+    # else touched mid-case, and `head -1` reads find's unordered output, so
+    # the wrong tree becomes the cwd for review and scorecard. Same prefix
+    # convention cleanup_testcase uses, for the same reason: the project name
+    # inside the testcase doesn't always match the testcase filename.
     project_dir=$(find "$WORKSPACE" -mindepth 1 -maxdepth 1 -type d \
-        -not -name 'logs' -not -name 'baselines' -not -name '.claude' -not -name '.codex' \
-        -not -name '.gemini' -not -name '.git' \
+        -name "${name%%-*}-*" \
         -newer "$marker" 2>/dev/null | head -1)
     rm -f "$marker"
 
@@ -313,6 +340,7 @@ for tc in "${FILES[@]}"; do
     build_duration=$(( $(date +%s) - start ))
     tool_calls_build=$(count_tool_calls "$log")
     assert_agent_ran "$log" "build $name"
+    assert_phase_ok "$build_rc" "$log" "build $name"
 
     # ── Phase 2: review ──────────────────────────────────────────────
     review_section=$(extract_section "$tc" "Review")
@@ -322,6 +350,7 @@ for tc in "${FILES[@]}"; do
             | run_phase "REVIEW" "claude" "$REVIEW_MODEL" "$project_dir" "$log" \
                 "Read,Grep,Glob,Bash(ls:*),Bash(cat:*),Bash(rg:*),Bash(find:*)"
         review_rc=$?
+        assert_phase_ok "$review_rc" "$log" "review $name"
     fi
 
     # ── Phase 3: scorecard — the arm-neutral rubric ──────────────────
@@ -332,6 +361,7 @@ for tc in "${FILES[@]}"; do
         cat "$SCORECARD" \
             | run_phase "SCORECARD" "claude" "$SCORECARD_MODEL" "$project_dir" "$log" \
                 "Read,Grep,Glob,Bash(ls:*),Bash(cat:*),Bash(rg:*),Bash(find:*)"
+        assert_phase_ok "$?" "$log" "scorecard $name"
     fi
 
     end=$(date +%s)
