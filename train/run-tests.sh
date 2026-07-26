@@ -49,6 +49,8 @@ case "$BUILD_CLI" in
 esac
 MODEL="${MODEL:-$DEFAULT_BUILD_MODEL}"
 REVIEW_MODEL="${REVIEW_MODEL:-claude-opus-5}"
+SCORECARD_MODEL="${SCORECARD_MODEL:-claude-opus-5}"
+SCORECARD="$SCRIPT_DIR/scorecard.md"
 # Hard ceiling per phase. The build phase occasionally improvises a bash
 # command that orphans a forking child tree under PID 1; bash's `wait`
 # then blocks forever. setsid + watchdog + post-phase pgrp sweep below
@@ -68,6 +70,18 @@ if command -v caffeinate >/dev/null; then
 fi
 
 mkdir -p "$LOGS"
+[[ -f "$SCORECARD" ]] || { echo "scorecard not found: $SCORECARD" >&2; exit 1; }
+
+# One row per case, same columns as run-baseline.sh's, so the two arms
+# concatenate into one table. `score` is train/scorecard.md's arm-neutral
+# rubric; `tool_calls` is the effort proxy — reaching a working project
+# in fewer tool calls is an outcome, not just reaching it at all.
+#
+# Split per CLI: comparing a claude skill run against a codex baseline
+# measures the CLI, not the skill. Separate files make that mistake
+# impossible instead of merely visible in the `cli` column.
+RESULTS_TSV="$WORKSPACE/results-$BUILD_CLI.tsv"
+[[ -f "$RESULTS_TSV" ]] || printf 'case\tarm\tcli\tmodel\tboot_rc\tscore\tduration_s\ttool_calls\n' > "$RESULTS_TSV"
 
 # Resolve the testcase files to run.
 shopt -s nullglob
@@ -282,6 +296,10 @@ for tc in "${FILES[@]}"; do
         prepend_prompt_to_readme "$project_dir" "$tc"
     fi
 
+    # Effort proxy, read before the review/scorecard phases add their own
+    # tool calls to the log.
+    tool_calls_build=$(count_tool_calls "$log")
+
     # ── Phase 2: review ──────────────────────────────────────────────
     review_section=$(extract_section "$tc" "Review")
     review_rc=0
@@ -292,13 +310,29 @@ for tc in "${FILES[@]}"; do
         review_rc=$?
     fi
 
+    # ── Phase 3: scorecard — the arm-neutral rubric ──────────────────
+    # Separate from the review on purpose: `## Review` asserts
+    # seedkit-specific structure, which the baseline arm was never told
+    # to produce. scorecard.md is what the two arms are compared on.
+    if [[ -n "$project_dir" ]]; then
+        cat "$SCORECARD" \
+            | run_phase "SCORECARD" "claude" "$SCORECARD_MODEL" "$project_dir" "$log" \
+                "Read,Grep,Glob,Bash(ls:*),Bash(cat:*),Bash(rg:*),Bash(find:*)"
+    fi
+
     end=$(date +%s)
     duration=$((end - start))
+    score=$(scorecard_value "$log"); score=${score:--}
     {
         echo
         echo "════════ DONE ════════"
-        printf '[build_exit: %s, review_exit: %s, duration: %ss]\n' "$build_rc" "$review_rc" "$duration"
+        printf '[build_exit: %s, review_exit: %s, score: %s, duration: %ss, tool_calls: %s]\n' \
+            "$build_rc" "$review_rc" "$score" "$duration" "$tool_calls_build"
     } >> "$log"
+
+    printf '%s\tskill\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$name" "$BUILD_CLI" "$MODEL" "$build_rc" "$score" "$duration" "$tool_calls_build" \
+        >> "$RESULTS_TSV"
 done
 
 # Top-level README for the examples collection.
@@ -339,5 +373,6 @@ done
 } > "$WORKSPACE/README.md"
 
 echo
-echo "Logs:  $LOGS/"
-echo "Index: $WORKSPACE/README.md"
+echo "Logs:    $LOGS/"
+echo "Index:   $WORKSPACE/README.md"
+echo "Results: $RESULTS_TSV"

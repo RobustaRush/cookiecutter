@@ -177,7 +177,10 @@ cli_dispatch() {
                     --output-format stream-json --include-partial-messages \
                     --print --verbose
             fi \
-            | jq --unbuffered -j -r 'select(.event.delta.type? == "text_delta") | .event.delta.text' \
+            | jq --unbuffered -j -r '
+                if .event.delta.type? == "text_delta" then .event.delta.text
+                elif .event.content_block?.type? == "tool_use" then "\n[tool:\(.event.content_block.name)]\n"
+                else empty end' \
             | _cli_sink
             exit "${PIPESTATUS[0]}"
             ;;
@@ -219,6 +222,21 @@ cli_dispatch() {
             exit 2
             ;;
     esac
+}
+
+# count_tool_calls <log> — how many tool invocations the agent made,
+# from the `[tool:NAME]` markers cli_dispatch emits for claude and codex.
+# A proxy for effort: reaching a working project in fewer tool calls is
+# an outcome the arms are compared on, not just whether they got there.
+# agy has no structured event stream, so this reads 0 for that CLI.
+count_tool_calls() {
+    grep -c '^\[tool:' "$1" 2>/dev/null || echo 0
+}
+
+# scorecard_value <log> — the `SCORE n/8` the scorecard phase emitted,
+# or `-` when the phase didn't run or the agent didn't follow the format.
+scorecard_value() {
+    grep -oE '^SCORE [0-9]+/[0-9]+' "$1" 2>/dev/null | tail -1 | awk '{print $2}' || true
 }
 
 _cli_sink() {

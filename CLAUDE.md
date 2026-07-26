@@ -5,7 +5,7 @@ Claude Code skill for bootstrapping Django projects + the testcase harness that 
 Layout:
 - `skills/seedkit/SKILL.md` + `skills/seedkit/references/*.md` — the skill itself.
 - `testcases/0[1-9]-*.md` — scripted runs that exercise the skill end-to-end.
-- `train/` — the testcase harness: `run-tests.sh` pipes each testcase through an agent CLI and writes per-run logs; `run-baseline.sh` generates the no-skill control group; `review-logs.sh` auto-patches the skill from those logs; `agents.sh` is the shared multi-CLI (claude/codex/agy) dispatch the three scripts source.
+- `train/` — the testcase harness: `run-tests.sh` pipes each testcase through an agent CLI and writes per-run logs; `run-baseline.sh` generates the no-skill control arm; `review-logs.sh` auto-patches the skill from those logs; `agents.sh` is the shared multi-CLI (claude/codex/agy) dispatch the three scripts source.
 - `workspace/` — gitignored scratch where generated projects live; wiped between runs.
 
 ## Writing reference files
@@ -45,9 +45,17 @@ The reviewer prompt at the bottom of every testcase is identical and short: repo
 
 ## train/run-tests.sh contract
 
-Each case runs in its own session (portable `setsid_exec` Python shim, `train/agents.sh`) so the post-case sweep `kill -- -$pgid` reaches every descendant — orphaned celery workers, gunicorn, `runserver` autoreloader. A watchdog terminates the group if a phase overruns — `TIMEOUT_PER_PHASE` (7200) in `run-tests.sh`, `TIMEOUT_PER_CASE` (3600) in `run-baseline.sh`. Cleanup is harness-side; the skill and testcase prompts must not invoke `pkill -f` (it matches the parent agent-CLI process).
+Each case runs in its own session (portable `setsid_exec` Python shim, `train/agents.sh`) so the post-case sweep `kill -- -$pgid` reaches every descendant — orphaned celery workers, gunicorn, `runserver` autoreloader. A watchdog terminates the group if a phase overruns — `TIMEOUT_PER_PHASE` in `run-tests.sh`, `TIMEOUT_PER_CASE` in `run-baseline.sh`, both 7200. Cleanup is harness-side; the skill and testcase prompts must not invoke `pkill -f` (it matches the parent agent-CLI process).
 
 Generated projects land in `../seedkit-examples/` (the sibling submodule). Per-run logs land in `../seedkit-examples/logs/` (gitignored inside that repo). The harness prepends each testcase's `## Prompt` block to the generated project's `README.md` and writes a top-level `seedkit-examples/README.md` index after every run.
+
+## Baseline contract
+
+`run-baseline.sh` is the control arm: same `## Prompt`, same `## Boot check`, same auto-fix instruction, no skill. The two arms must differ in one variable only, so anything given to one is given to both.
+
+- Output goes to `../seedkit-baselines/` — a sibling of `seedkit-examples/`, never under it. `run-tests.sh` symlinks the skill into `seedkit-examples/.claude/skills/`, and anything below that path can discover it. `assert_skill_unreachable()` walks up from the baseline root and refuses to start if it finds the skill there or installed globally (`~/.claude/skills/`, `~/.gemini/config/plugins/`).
+- Both arms are graded on `train/scorecard.md` — eight arm-neutral static checks emitting `SCORE n/8`. The testcase's `## Review` section is skill-arm-only; it asserts structure the control was never asked for.
+- Each arm appends one row to `results-<cli>.tsv` (`case / arm / cli / model / boot_rc / score / duration_s / tool_calls`) so the comparison is a table, not two directory trees. Split per CLI because comparing a claude skill run against a codex baseline measures the CLI, not the skill — only ever concatenate the two arms' files for the same CLI. `tool_calls` counts `[tool:…]` markers in the log; reaching a working project in fewer loops is an outcome the skill gets credit for, not just reaching it.
 
 ## Submodule workflow
 
