@@ -2,7 +2,7 @@
 #
 # Generate the "no-skill" control arm for each testcase: a fresh agent
 # CLI with no /seedkit skill reachable, given the same ## Prompt and the
-# same ## Boot check as the skill arm, into seedkit-baselines/<case>/.
+# same ## Boot check as the skill arm, into seedkit-examples/baselines/.
 #
 # For the comparison to mean anything the two arms must differ in ONE
 # variable — whether the skill is loaded. So this script mirrors
@@ -12,11 +12,14 @@
 # never told to produce; both arms are graded on train/scorecard.md
 # instead, which is arm-neutral and emits `SCORE n/8`.
 #
-# Output lives OUTSIDE $WORKSPACE on purpose. run-tests.sh symlinks the
-# skill into $WORKSPACE/.claude/skills/, and anything under that path
-# can reach it — a control group that can see the treatment is not a
-# control group. assert_skill_unreachable() below refuses to start if
-# the skill is reachable from the baseline root or installed globally.
+# Output lands in $WORKSPACE/baselines/ so the control arm publishes with
+# the skill arm. That path sits under the .claude/skills/seedkit symlink
+# run-tests.sh creates, and a control group that can see the treatment is
+# not a control group — so unlink_skill() removes the project-scoped
+# symlinks for the duration of the run and assert_skill_unreachable()
+# refuses to start if anything is still reachable. run-tests.sh recreates
+# the symlink on its next invocation, so the removal costs nothing. Don't
+# run the two scripts concurrently.
 #
 # Manual invocation — run once, refresh by hand when the testcases
 # change or the model changes. Run from inside seedkit/train/.
@@ -37,13 +40,14 @@ TESTCASES="$REPO/testcases"
 source "$SCRIPT_DIR/agents.sh"
 WORKSPACE="${WORKSPACE:-$REPO/../seedkit-examples}"
 WORKSPACE="$(cd "$WORKSPACE" && pwd)"
-# Sibling of $WORKSPACE, never under it — see the header. Logs go here
-# too, so review-logs.sh (which globs $WORKSPACE/logs/*.log) never picks
-# up a baseline log and tries to review it as a testcase run.
-BASELINE_ROOT="${BASELINE_ROOT:-$WORKSPACE/../seedkit-baselines}"
-mkdir -p "$BASELINE_ROOT"
-BASELINE_ROOT="$(cd "$BASELINE_ROOT" && pwd)"
-LOGS="$BASELINE_ROOT/logs"
+# Inside the examples repo so the control arm and its scorecards publish
+# alongside the skill arm. Safe only because unlink_skill() below removes
+# the skill symlink for the run — see the header.
+BASELINE_ROOT="${BASELINE_ROOT:-$WORKSPACE/baselines}"
+# Under $WORKSPACE/logs/, which the examples repo gitignores wholesale and
+# which review-logs.sh globs NON-recursively — so baseline logs are both
+# unpublished and invisible to the log reviewer.
+LOGS="$WORKSPACE/logs/baselines"
 SCORECARD="$SCRIPT_DIR/scorecard.md"
 BASELINE_CLI="${BASELINE_CLI:-claude}"
 case "$BASELINE_CLI" in
@@ -69,10 +73,26 @@ if command -v caffeinate >/dev/null; then
 fi
 
 # The control arm must not be able to reach the skill. run-tests.sh
-# symlinks it into $WORKSPACE/.claude/skills/ and `agy plugin install`
-# copies it into the user's global plugin dir — either would silently
-# turn this into a second treatment run. Refuse to start rather than
-# telling the agent "no skill is loaded" and hoping.
+# symlinks it into $WORKSPACE/.claude/skills/ (and .codex/skills/ when it
+# built with codex). Remove those so the control arm can't discover it;
+# run-tests.sh recreates them unconditionally at the top of its next run,
+# so nothing is lost.
+unlink_skill() {
+    local d
+    for d in "$WORKSPACE/.claude/skills/seedkit" \
+             "$WORKSPACE/.codex/skills/seedkit" \
+             "$WORKSPACE/.gemini/skills/seedkit"; do
+        if [[ -L "$d" ]]; then
+            rm -f "$d" && echo "unlinked skill: $d"
+        elif [[ -e "$d" ]]; then
+            # A real directory here is not ours to delete — the operator
+            # put it there and run-tests.sh only ever creates symlinks.
+            echo "refusing to remove non-symlink: $d" >&2
+            exit 1
+        fi
+    done
+}
+
 assert_skill_unreachable() {
     local probe=$1 found=0 d
     while :; do
@@ -90,24 +110,25 @@ assert_skill_unreachable() {
     if [[ $found -eq 1 ]]; then
         cat >&2 <<'MSG'
 
-The seedkit skill is reachable from the baseline root. A control group that
-can see the treatment measures nothing. Remove the paths listed above (the
-project-scoped ones are symlinks run-tests.sh creates; the agy one comes off
-with `agy plugin uninstall seedkit`), or point BASELINE_ROOT somewhere the
-skill cannot be discovered from.
+The seedkit skill is still reachable from the baseline root. A control group
+that can see the treatment measures nothing. unlink_skill() removes the
+project-scoped symlinks automatically, so anything left is either a real
+directory someone placed by hand or a global install — the agy one comes off
+with `agy plugin uninstall seedkit`.
 MSG
         exit 1
     fi
 }
 
 mkdir -p "$LOGS" "$BASELINE_ROOT"
+unlink_skill
 assert_skill_unreachable "$BASELINE_ROOT"
 [[ -f "$SCORECARD" ]] || { echo "scorecard not found: $SCORECARD" >&2; exit 1; }
 
-# Per CLI — see the note in run-tests.sh. Only ever concatenate the two
-# arms' files for the SAME cli.
-RESULTS_TSV="$BASELINE_ROOT/results-$BASELINE_CLI.tsv"
-[[ -f "$RESULTS_TSV" ]] || printf 'case\tarm\tcli\tmodel\tboot_rc\tscore\tduration_s\ttool_calls\n' > "$RESULTS_TSV"
+# Both arms share one file per CLI — the `arm` column separates them, so
+# a comparison is one `column -t` away. Split per CLI because comparing a
+# claude skill run against a codex baseline measures the CLI, not the skill.
+RESULTS_TSV="$WORKSPACE/results-$BASELINE_CLI.tsv"
 
 # Resolve the testcase files to run.
 shopt -s nullglob
@@ -239,9 +260,8 @@ for tc in "${FILES[@]}"; do
             "$rc" "$score" "$duration" "$tool_calls_build"
     } >> "$log"
 
-    printf '%s\tbaseline\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$name" "$BASELINE_CLI" "$MODEL" "$rc" "$score" "$duration" "$tool_calls_build" \
-        >> "$RESULTS_TSV"
+    upsert_result "$RESULTS_TSV" "$name" baseline "$(printf '%s\tbaseline\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
+        "$name" "$BASELINE_CLI" "$MODEL" "$rc" "$score" "$duration" "$tool_calls_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
 
     printf '    done: exit=%s score=%s duration=%ss tools=%s\n' \
         "$rc" "$score" "$duration" "$tool_calls_build"
@@ -258,5 +278,5 @@ echo
 echo "baselines under: $BASELINE_ROOT"
 echo "results:         $RESULTS_TSV"
 echo
-echo "Compare the arms — same CLI only (skill rows come from run-tests.sh):"
-echo "    cat $WORKSPACE/results-$BASELINE_CLI.tsv $RESULTS_TSV | sort -k1,1 -k2,2 | column -t"
+echo "Compare the arms (skill rows come from run-tests.sh, same file):"
+echo "    column -t < $RESULTS_TSV"

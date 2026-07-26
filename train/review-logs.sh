@@ -63,6 +63,28 @@ else
     LOGS=("$LOGS_DIR"/*.log)
 fi
 
+# Baseline logs are not testcase runs — they have no REVIEW phase and no
+# skill was loaded, so "which skill defect does this show" has no answer.
+# run-baseline.sh writes them to $LOGS_DIR/baselines/ (out of this
+# non-recursive glob), but reject them by name too so an explicit argument
+# or a stray copy can't get through.
+declare -a KEPT=()
+for candidate in "${LOGS[@]}"; do
+    base=$(basename "$candidate")
+    if [[ "$base" == baseline-* ]]; then
+        echo "skip: $base is a baseline log, not a testcase run" >&2
+        continue
+    fi
+    if [[ -f "$candidate" ]] && ! grep -q '════════ BUILD' "$candidate"; then
+        echo "skip: $base has no BUILD phase — not a testcase run" >&2
+        continue
+    fi
+    KEPT+=("$candidate")
+done
+# `LOGS=("${KEPT[@]}")` on an empty KEPT trips `set -u` on bash 3.2, which
+# is what macOS ships.
+if [[ ${#KEPT[@]} -gt 0 ]]; then LOGS=("${KEPT[@]}"); else LOGS=(); fi
+
 if [[ ${#LOGS[@]} -eq 0 ]]; then
     echo "no logs to review under $LOGS_DIR"
     exit 0

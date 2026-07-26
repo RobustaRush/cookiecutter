@@ -233,6 +233,27 @@ count_tool_calls() {
     grep -c '^\[tool:' "$1" 2>/dev/null || echo 0
 }
 
+# upsert_result <tsv> <case> <arm> <row>
+#
+# Replaces the row for this (case, arm) rather than appending one. Re-running
+# a case after a skill fix must UPDATE its row — appending would leave the
+# stale row next to the new one and every comparison would read both. Keeps
+# the body sorted so the committed file diffs cleanly.
+RESULTS_HEADER=$'case\tarm\tcli\tmodel\tboot_rc\tscore\tduration_s\ttool_calls\trun_at'
+upsert_result() {
+    local tsv=$1 case_name=$2 arm=$3 row=$4 tmp body
+    tmp="$(mktemp)"
+    body="$(mktemp)"
+    if [[ -f "$tsv" ]]; then
+        awk -F'\t' -v c="$case_name" -v a="$arm" \
+            'NR > 1 && !($1 == c && $2 == a)' "$tsv" > "$body"
+    fi
+    printf '%s\n' "$row" >> "$body"
+    { printf '%s\n' "$RESULTS_HEADER"; sort -t$'\t' -k1,1 -k2,2 "$body"; } > "$tmp"
+    mv "$tmp" "$tsv"
+    rm -f "$body"
+}
+
 # scorecard_value <log> — the `SCORE n/8` the scorecard phase emitted,
 # or `-` when the phase didn't run or the agent didn't follow the format.
 scorecard_value() {

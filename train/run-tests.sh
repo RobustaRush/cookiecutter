@@ -72,16 +72,17 @@ fi
 mkdir -p "$LOGS"
 [[ -f "$SCORECARD" ]] || { echo "scorecard not found: $SCORECARD" >&2; exit 1; }
 
-# One row per case, same columns as run-baseline.sh's, so the two arms
-# concatenate into one table. `score` is train/scorecard.md's arm-neutral
-# rubric; `tool_calls` is the effort proxy — reaching a working project
-# in fewer tool calls is an outcome, not just reaching it at all.
+# One row per (case, arm), shared with run-baseline.sh — the `arm` column
+# separates them, so comparing is one `column -t`. `score` is
+# train/scorecard.md's arm-neutral rubric; `tool_calls` is the effort proxy
+# — reaching a working project in fewer tool calls is an outcome, not just
+# reaching it at all. Split per CLI: comparing a claude skill run against a
+# codex baseline measures the CLI, not the skill.
 #
-# Split per CLI: comparing a claude skill run against a codex baseline
-# measures the CLI, not the skill. Separate files make that mistake
-# impossible instead of merely visible in the `cli` column.
+# upsert_result() REPLACES the row for this (case, arm). Re-running a case
+# after a skill fix must update its row, not append a second one next to
+# the stale result. Committed to the examples repo, so it stays sorted.
 RESULTS_TSV="$WORKSPACE/results-$BUILD_CLI.tsv"
-[[ -f "$RESULTS_TSV" ]] || printf 'case\tarm\tcli\tmodel\tboot_rc\tscore\tduration_s\ttool_calls\n' > "$RESULTS_TSV"
 
 # Resolve the testcase files to run.
 shopt -s nullglob
@@ -286,7 +287,7 @@ for tc in "${FILES[@]}"; do
     # Locate the generated project: any subdir with files newer than the
     # marker, excluding the logs dir.
     project_dir=$(find "$WORKSPACE" -mindepth 1 -maxdepth 1 -type d \
-        -not -name 'logs' -not -name '.claude' -not -name '.codex' \
+        -not -name 'logs' -not -name 'baselines' -not -name '.claude' -not -name '.codex' \
         -not -name '.gemini' -not -name '.git' \
         -newer "$marker" 2>/dev/null | head -1)
     rm -f "$marker"
@@ -330,9 +331,8 @@ for tc in "${FILES[@]}"; do
             "$build_rc" "$review_rc" "$score" "$duration" "$tool_calls_build"
     } >> "$log"
 
-    printf '%s\tskill\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$name" "$BUILD_CLI" "$MODEL" "$build_rc" "$score" "$duration" "$tool_calls_build" \
-        >> "$RESULTS_TSV"
+    upsert_result "$RESULTS_TSV" "$name" skill "$(printf '%s\tskill\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
+        "$name" "$BUILD_CLI" "$MODEL" "$build_rc" "$score" "$duration" "$tool_calls_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
 done
 
 # Top-level README for the examples collection.
@@ -347,7 +347,7 @@ done
     echo
     for sub in "$WORKSPACE"/*/; do
         sub_name=$(basename "$sub")
-        [[ "$sub_name" == "logs" ]] && continue
+        [[ "$sub_name" == "logs" || "$sub_name" == "baselines" ]] && continue
         [[ -f "$sub/README.md" ]] || continue
         purpose=$(awk '
             /^Purpose: / { sub(/^Purpose: */, ""); print; exit }
