@@ -239,7 +239,7 @@ count_tool_calls() {
 # a case after a skill fix must UPDATE its row — appending would leave the
 # stale row next to the new one and every comparison would read both. Keeps
 # the body sorted so the committed file diffs cleanly.
-RESULTS_HEADER=$'case\tarm\tcli\tmodel\tboot_rc\tscore\tduration_s\ttool_calls\trun_at'
+RESULTS_HEADER=$'case\tarm\tcli\tmodel\tboot_rc\tscore\tbuild_s\ttool_calls\trun_at'
 upsert_result() {
     local tsv=$1 case_name=$2 arm=$3 row=$4 tmp body
     tmp="$(mktemp)"

@@ -297,8 +297,11 @@ for tc in "${FILES[@]}"; do
         prepend_prompt_to_readme "$project_dir" "$tc"
     fi
 
-    # Effort proxy, read before the review/scorecard phases add their own
-    # tool calls to the log.
+    # Effort metrics for the BUILD phase only, captured before review and
+    # scorecard run. Both are comparison inputs, and the control arm has no
+    # review phase — charging the skill arm for one would make it look
+    # slower for doing more verification, not for working harder.
+    build_duration=$(( $(date +%s) - start ))
     tool_calls_build=$(count_tool_calls "$log")
 
     # ── Phase 2: review ──────────────────────────────────────────────
@@ -327,12 +330,12 @@ for tc in "${FILES[@]}"; do
     {
         echo
         echo "════════ DONE ════════"
-        printf '[build_exit: %s, review_exit: %s, score: %s, duration: %ss, tool_calls: %s]\n' \
-            "$build_rc" "$review_rc" "$score" "$duration" "$tool_calls_build"
+        printf '[build_exit: %s, review_exit: %s, score: %s, build: %ss, total: %ss, tool_calls: %s]\n' \
+            "$build_rc" "$review_rc" "$score" "$build_duration" "$duration" "$tool_calls_build"
     } >> "$log"
 
     upsert_result "$RESULTS_TSV" "$name" skill "$(printf '%s\tskill\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
-        "$name" "$BUILD_CLI" "$MODEL" "$build_rc" "$score" "$duration" "$tool_calls_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
+        "$name" "$BUILD_CLI" "$MODEL" "$build_rc" "$score" "$build_duration" "$tool_calls_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
 done
 
 # Top-level README for the examples collection.

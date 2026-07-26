@@ -244,6 +244,7 @@ for tc in "${FILES[@]}"; do
         echo "════════ SCORECARD (claude / $SCORECARD_MODEL) ════════"
         echo
     } >> "$log"
+    build_duration=$(( $(date +%s) - start ))
     tool_calls_build=$(count_tool_calls "$log")
     pushd "$case_dir" >/dev/null
     PROMPT="$(cat "$SCORECARD")" CASE_LOG="$log" CASE_MODEL="$SCORECARD_MODEL" \
@@ -256,17 +257,17 @@ for tc in "${FILES[@]}"; do
     {
         echo
         echo "════════ DONE ════════"
-        printf '[exit: %s, score: %s, duration: %ss, tool_calls: %s]\n' \
-            "$rc" "$score" "$duration" "$tool_calls_build"
+        printf '[exit: %s, score: %s, build: %ss, total: %ss, tool_calls: %s]\n' \
+            "$rc" "$score" "$build_duration" "$duration" "$tool_calls_build"
     } >> "$log"
 
     upsert_result "$RESULTS_TSV" "$name" baseline "$(printf '%s\tbaseline\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
-        "$name" "$BASELINE_CLI" "$MODEL" "$rc" "$score" "$duration" "$tool_calls_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
+        "$name" "$BASELINE_CLI" "$MODEL" "$rc" "$score" "$build_duration" "$tool_calls_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
 
-    printf '    done: exit=%s score=%s duration=%ss tools=%s\n' \
-        "$rc" "$score" "$duration" "$tool_calls_build"
-    RESULTS+=("$(printf 'exit=%-3s score=%-5s %5ss  tools=%-4s %s' \
-        "$rc" "$score" "$duration" "$tool_calls_build" "$name")")
+    printf '    done: exit=%s score=%s build=%ss tools=%s\n' \
+        "$rc" "$score" "$build_duration" "$tool_calls_build"
+    RESULTS+=("$(printf 'exit=%-3s score=%-5s build=%-6s tools=%-4s %s' \
+        "$rc" "$score" "${build_duration}s" "$tool_calls_build" "$name")")
 done
 
 echo
