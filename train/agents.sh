@@ -271,7 +271,13 @@ cli_dispatch() {
 # an outcome the arms are compared on, not just whether they got there.
 # agy has no structured event stream, so this reads 0 for that CLI.
 count_tool_calls() {
-    grep -c '^\[tool:' "$1" 2>/dev/null || echo 0
+    # `grep -c` PRINTS 0 and EXITS 1 when nothing matches, so a trailing
+    # `|| echo 0` emits "0\n0" — the newline lands mid-row and splits the
+    # TSV. Capture first, default only when the capture itself is empty
+    # (file missing).
+    local n
+    n=$(grep -c '^\[tool:' "$1" 2>/dev/null) || true
+    printf '%s' "${n:-0}"
 }
 
 # upsert_result <tsv> <case> <arm> <row>
