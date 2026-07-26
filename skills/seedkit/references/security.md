@@ -1,7 +1,6 @@
 # Security
 
 Docs: <https://docs.djangoproject.com/en/stable/topics/security/> · <https://docs.djangoproject.com/en/stable/ref/middleware/#django.middleware.security.SecurityMiddleware>
-# https://docs.djangoproject.com/en/6.0/topics/security/
 
 ## config/settings/production.py
 

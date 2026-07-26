@@ -58,19 +58,13 @@ path("django-rq/", include("django_rq.urls")),
 
 `django_rq.urls` is a module, not a URLconf — wrap with `include()`.
 
-## Run worker (host)
+## Local — run on the host
 
 ```sh
 uv run manage.py rqworker default
 ```
 
 `settings.RQ["JOB_CLASS"]` is read globally by `rqworker`. No `--job-class` flag needed.
-
-## Local — run on the host
-
-```sh
-uv run manage.py rqworker default
-```
 
 Open a second terminal alongside `uv run manage.py runserver`. `docker compose up -d redis` (and `db` if Postgres-in-Docker) must be running.
 

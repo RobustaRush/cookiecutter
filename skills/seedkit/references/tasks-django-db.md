@@ -44,12 +44,6 @@ TASKS = {"default": {"BACKEND": "django_tasks.backends.immediate.ImmediateBacken
 uv run manage.py migrate
 ```
 
-## Run worker (host)
-
-```sh
-uv run manage.py db_worker
-```
-
 ## Prune finished results
 
 Finished and failed task rows stay in the table forever. Schedule the bundled command — host cron on a VPS (next to the `dbbackup` lines if present), or the task runner:

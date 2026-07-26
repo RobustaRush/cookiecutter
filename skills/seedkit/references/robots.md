@@ -53,7 +53,7 @@ urlpatterns = [
 
 ## When to disallow everything
 
-Staging deploys, preview environments, internal tools — set `ROBOTS_DISALLOW_ALL=True` in `.env` for those, leave it unset in production. Don't rely on `DEBUG` alone (a misconfigured prod with `DEBUG=True` would expose the site to crawlers anyway).
+Staging deploys, preview environments, internal tools — set `ROBOTS_DISALLOW_ALL=True` in `.env` for those, leave it unset in production. Don't rely on `DEBUG` alone — staging and preview boxes run with `DEBUG=False`, so only the explicit toggle keeps them out of the index.
 
 ## What this is NOT
 

@@ -31,34 +31,16 @@ Set in repo settings:
 
 ## deploy/.env.prod.example — ship this in the repo
 
-Lives next to `deploy/docker-compose.prod.yml`. `docker-compose.prod.yml`
-references many vars; without a checked-in template the first deploy fails
-with cryptic compose errors. Provide every var:
+`references/deploy-vps.md` defines the base template. Append one section for
+the GHCR image path:
 
 ```sh
-# Django
-DJANGO_SETTINGS_MODULE=config.settings.production   # the rqworker / db_worker
-                                                    # commands inherit this.
-                                                    # manage.py defaults to
-                                                    # config.settings.local —
-                                                    # without this, prod runs
-                                                    # with NO security hardening.
-DJANGO_SECRET_KEY=
-DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=example.com,localhost,127.0.0.1   # localhost/127.0.0.1 for the in-container healthcheck
-DJANGO_CSRF_TRUSTED_ORIGINS=https://example.com
-DJANGO_BEHIND_PROXY=True            # Caddy terminates TLS; required for
-                                    # SECURE_SSL_REDIRECT to work right.
-DATABASE_URL=postgres://postgres:CHANGE_ME@db:5432/postgres
-REDIS_URL=redis://redis:6379
-WEB_CONCURRENCY=4                   # gunicorn worker count — 2×cores+1 sync, cores for uvicorn
-
-# Postgres
-POSTGRES_PASSWORD=CHANGE_ME
-
 # Image
 GITHUB_REPOSITORY=owner/repo        # the GHCR image path
 ```
+
+`IMAGE_TAG` is not listed — the deploy workflow exports it as the commit SHA and
+the compose file falls back to `:latest`.
 
 ## .github/workflows/deploy.yml
 
@@ -105,6 +87,8 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
           target: prod                              # matches the `prod` stage in references/docker.md
+          build-args: |
+            GIT_SHA=${{ github.sha }}                # feeds SENTRY_RELEASE (references/error-reporting.md)
 
       # Pin third-party deploy actions to a commit SHA, not a tag — this step
       # runs arbitrary shell on prod. Resolve the SHA of the latest release:

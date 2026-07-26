@@ -14,7 +14,7 @@ uv add 'django-storages[s3]'
 
 ## Settings
 
-This block **replaces** any `STATIC_URL` / `STATIC_ROOT` / `MEDIA_URL` / `MEDIA_ROOT` set in the foundation. With S3 there's no local `STATIC_ROOT` — `collectstatic` writes straight to the bucket.
+This block **replaces** any `MEDIA_URL` / `MEDIA_ROOT` set in the foundation. `STATIC_URL` / `STATIC_ROOT` stay — base keeps Django's local staticfiles backend, which needs `STATIC_ROOT` to run `collectstatic` at all; `production.py` flips static to the bucket.
 
 `STORAGES` (Django 4.2+) replaces legacy `STATICFILES_STORAGE` / `DEFAULT_FILE_STORAGE`. Don't set the legacy keys alongside it.
 
@@ -53,6 +53,7 @@ STORAGES = {
 }
 
 STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"   # S3StaticStorage ignores it in prod; collectstatic needs it here
 
 # Derive scheme + host for media URLs. AWS_S3_CUSTOM_DOMAIN wins (CloudFront /
 # bucket vhost). Otherwise fall back to the endpoint host (MinIO in dev) so

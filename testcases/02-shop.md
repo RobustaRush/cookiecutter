@@ -48,8 +48,10 @@ Assume Postgres is already running locally on port 5432 with user `postgres` / p
 createdb shop_db || true
 cd 02-shop
 uv run manage.py tailwind build
-uv run manage.py runserver &
-curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null
+uv run manage.py runserver --noreload &
+RUNSERVER_PID=$!
+for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && up=1 && break; sleep 1; done
+[ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; kill "$RUNSERVER_PID"; exit 1; }
 curl -sf http://127.0.0.1:8000/ | grep -q 'text-blue-600'
 CSS_URL=$(curl -sf http://127.0.0.1:8000/ | grep -oE 'href="[^"]*tailwind[^"]*\.css[^"]*"' | head -1 | sed 's/href="//;s/"//')
 test -n "$CSS_URL"
@@ -69,7 +71,7 @@ uv run ruff check .
 uv run pyright
 # Task runner sanity — mise.toml present.
 test -f mise.toml
-kill $(jobs -p) 2>/dev/null; wait
+kill "$RUNSERVER_PID"
 dropdb shop_db
 ```
 
@@ -123,7 +125,8 @@ docker run -d --name shop-smoke-web --network shop-smoke -p 8000:8000 \
     -e DJANGO_SECURE_SSL_REDIRECT=False \
     shop-prod
 # Wait for healthz to return 200.
-for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/healthz >/dev/null && break; sleep 1; done
+for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/healthz >/dev/null && prod_up=1 && break; sleep 1; done
+[ -n "$prod_up" ] || { echo "DEPLOY CHECK FAILED: gunicorn never became healthy"; docker logs shop-smoke-web; docker rm -f shop-smoke-web shop-smoke-db; exit 1; }
 
 # 6. Prod smoke assertions — gunicorn, not runserver.
 test "$(curl -sf http://127.0.0.1:8000/healthz)" = "ok"

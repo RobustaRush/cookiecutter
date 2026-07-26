@@ -14,7 +14,7 @@
 #
 #   ./run-baseline.sh                       # all testcases (claude)
 #   ./run-baseline.sh 02 07                 # specific ones (matched by NN prefix)
-#   MODEL=claude-opus-4-7 ./run-baseline.sh
+#   MODEL=claude-opus-5 ./run-baseline.sh
 #   BASELINE_CLI=codex ./run-baseline.sh    # or agy
 #
 # Requires: jq, python3, and whichever CLI $BASELINE_CLI names.

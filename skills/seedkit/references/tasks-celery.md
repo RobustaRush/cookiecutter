@@ -42,9 +42,11 @@ __all__ = ("celery_app",)
 In `config/settings.py` (or `config/settings/base.py`). If `redis.md` set `REDIS_URL`, reuse it.
 
 ```python
-REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379")
+REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 # /1 and /2 — Celery's slots in the Redis DB map (references/conventions.md).
+# `.rstrip("/")` matches redis.md and realtime.md — a provider-supplied URL with a
+# trailing slash would otherwise build `redis://host:6379//1`.
 CELERY_BROKER_URL = f"{REDIS_URL}/1"
 CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True  # silence Celery 5+ deprecation
@@ -59,7 +61,7 @@ Add `@shared_task` functions to `<app>/tasks.py` inside a registered Django app 
 ## Local — run on the host
 
 ```sh
-uv run celery -A config worker -l info
+DJANGO_SETTINGS_MODULE=config.settings.local uv run celery -A config worker -l info
 ```
 
 Open a second terminal alongside `uv run manage.py runserver`. The worker shares the project venv and the `.env` file. `docker compose up -d redis` (and `db` if Postgres-in-Docker) must already be running.
@@ -122,7 +124,7 @@ CELERY_BEAT_SCHEDULE = {
 ### Local — run on the host
 
 ```sh
-uv run celery -A config beat -l info
+DJANGO_SETTINGS_MODULE=config.settings.local uv run celery -A config beat -l info
 ```
 
 Third terminal, alongside the worker and runserver.

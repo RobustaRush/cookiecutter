@@ -2,6 +2,47 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
+## 26.30.7 — 2026-07-26
+
+### Fixed
+- `SKILL.md` §4 — the foundation smoke poll swallowed its own failure. `for … curl -sf … && break; sleep 1; done` exits 0 when the server never comes up, so "if the curl fails, fix the foundation" never fired and a dead foundation passed into §5. Now sets a flag inside the loop and tests it after.
+- `deploy-managed.md` — health-check comment pointed at `references/health.md`; the file is `healthcheck.md`.
+- `existing-project.md` §2 — derive request handling (`wsgi` / `asgi` / `asgi+channels`) from `INSTALLED_APPS` and the deploy artefacts. SKILL.md §5.7 and `async.md` both branch on it, so an existing channels project used to skip the channel-layer question entirely.
+- `tasks-celery.md` — `REDIS_URL` now `.rstrip("/")` like `redis.md` and `realtime.md`; a provider URL with a trailing slash built `redis://host:6379//1`.
+- `dev-tools.md` — orbit middleware insert computes the `SecurityMiddleware` index instead of hardcoding 1, matching the silk block.
+
+Full line-by-line audit of the remaining 43 references (previously checked only mechanically) — 36 findings, each adversarially verified:
+
+- Image-build failures: `tailwind.md` called bare `python` in the builder stage, which never puts `/opt/venv/bin` on `PATH` (and duplicated a `collectstatic` RUN `docker.md` already owns); `i18n.md`'s `compilemessages` RUN lacked the production-settings + `DJANGO_DEBUG=True` shim, so it raised `ImproperlyConfigured`; `database.md`'s Litestream entrypoint ran `createcachetable --database cache` unconditionally, but `--database` validates against configured aliases and exits 2 unless §5.3 cache=`sqlite` was chosen; `docker.md`'s `collectstatic` names the single-file settings module alongside the split one.
+- `storage-s3.md` keeps `STATIC_ROOT` — base leaves static on Django's local backend, which raises without it. The prose said the opposite.
+- `analytics.md` — self-hosted GoatCounter mounted its volume at a path the image doesn't use, so the SQLite DB vanished on container recreate. Volume path fixed and `GOATCOUNTER_DB` set explicitly.
+- `error-reporting.md` — `glitchtip-worker` inherited the *app's* `.env.prod` instead of GlitchTip's own DB/Redis/SECRET_KEY; `SENTRY_RELEASE=${GIT_SHA}` in `.env.prod` never resolved, so it moves to a build `ARG` fed by `deploy-github-ssh.md`'s new `build-args`.
+- Boot checks that reported success on failure: `rest-bolt.md` and `favicon.md` now test the poll flag and stop the server — the same defect as SKILL.md §4. `rest-bolt.md` also pins `runbolt --port 8001` throughout; it defaults to 8000, so the documented two-server dev workflow couldn't run.
+- `realtime.md` — `config/asgi.py` import after `django.setup()` gains `# noqa: E402`; `lint.md` selects the whole `E` ruleset and E402 has no autofix, so CI failed.
+- `tasks-django-cron.md` — the `cron` prod service gains `logging: *logging`, which `conventions.md` requires of every service.
+- Factual corrections: `django-otp-totp` is not a package (TOTP ships inside `django-otp`); `WHITENOISE_USE_FINDERS` does exist; `django-modern-rest` needs Django 5.0+, not 4.2; `pyjwt` belongs to its `[jwt]` extra, not the `[msgspec]`/`[openapi]` chain; `dmr` *does* belong in `INSTALLED_APPS` when the OpenAPI UI serves static files; `django-bolt` does publish aarch64-linux wheels, so the `linux/amd64` pin is about matching the deploy target; `LocaleMiddleware` resolves URL prefix → cookie → `Accept-Language`.
+- Contract and pointer drift: `dbbackup.md` applies to `github-ssh` as well as `vps` and lists the AWS keys in `.env.example`; `deploy-vps.md` now owns `deploy/.env.prod.example` (only `deploy-github-ssh.md` authored it); `healthcheck.md`'s Fly pointer names the `[[services.http_checks]]` block that actually exists; `new-project.md`'s boot check drops `createsuperuser` (SKILL.md §7 owns it); `tailwind.md`'s custom-error-page default aligns to SKILL.md's **no**; `tasks-celery.md` host commands carry the `DJANGO_SETTINGS_MODULE` prefix its own prose assumes, and `dev-tasks.md`'s `worker` task follows.
+- Smaller: duplicate host-run sections removed from the three `tasks-django-*` references; `security.md` stray URL rendering as a heading; `auth-hardening.md` restated `ACCOUNT_LOGIN_METHODS`; `devcontainer.md` notes the single-settings module; `robots.md` rationale corrected (staging runs `DEBUG=False`, which is why the explicit toggle is needed).
+
+### Changed
+- `SKILL.md` — the new-project path is §2 → §8, not §2 → §6; §7 and §8 are both mandatory.
+- `SKILL.md` §5.4 — periodic tasks (`django-crontask`) is now an explicit follow-up under the django-tasks options, not something reachable only by reading `tasks-django.md`.
+- `SKILL.md` §6.6 — a deploy target other than `none` applies `docker.md` first; with `none`, skip the production image.
+- `existing-project.md` §2 — the settings-layout bullet points at the delta rule in `new-project.md`, which existing-project runs never read as preflight.
+- `docker.md` — the local-services boot check uses `docker compose up -d --wait`, with the two rules that were living in `train/run-tests.sh`'s build prompt: give every service a `healthcheck:` so `--wait` has something to block on, and don't hand-roll a `docker compose ps --format json` readiness loop (Compose v2.6+ emits NDJSON, so `json.load` raises). Removed from the harness — the skill carries it now.
+- `SKILL.md` §5.6 — when the user already named a REST library, skip the `rest.md` comparison and read the leaf reference directly.
+
+### Testcases and harness
+- All nine testcases: boot-check poll loops now report their own failure, and every backgrounded process is killed by captured PID. Six loops exited 0 even when the server never came up, and five used `kill $(jobs -p)` — which SKILL.md §4 forbids, because the harness runs the snippet without job control. The suite could not fail on a dead server.
+- `testcases/README.md` — the structure template described `## Expected outcome` / `## Run` / `## Check report` / `## Cleanup`; the real cases use `## Prompt` / `## Boot check` / `## Deploy check` / `## Review`. Rewritten against reality, with the boot-check rules above. Dropped the "no automated runner" claim (`train/run-tests.sh` is the runner) and the per-case list of the skill's intentional design decisions.
+- `CLAUDE.md` — `agents.sh` dispatches claude/codex/agy, not gemini; the watchdog variable is `TIMEOUT_PER_PHASE` in `run-tests.sh` and `TIMEOUT_PER_CASE` in `run-baseline.sh`.
+- Model pins across `train/` and `testcases/README.md` → `claude-opus-5` (were split across 4-7 and 4-8).
+
+### Removed
+- `SKILL.md` "Reference files" — the 73-line index of all 50 references. Every §2/§5/§6 question now names its own reference inline (`→ references/lint.md`), so the group listing and the questionnaire no longer drift apart. SKILL.md drops 19,769 → 17,629 chars (~535 fewer tokens per invocation).
+- `SKILL.md` "Version pins" pitfall → `conventions.md`, which owns cross-file contracts.
+- `SKILL.md` "Snippet integrity" — the settings-delta bullet ("Don't restate values in `local.py` / `production.py` that `base.py` already sets"). `new-project.md` owns the rule and states it in full, naming `MIDDLEWARE` / `INSTALLED_APPS` / `DATABASES` / `EMAIL_BACKEND` / `STORAGES`; the SKILL.md copy had already drifted to a shorter version.
+
 ## 26.30.5 — 2026-07-24
 
 ### Added
@@ -115,81 +156,4 @@ Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One 
 
 ### Changed
 - Testcase Prompt blocks no longer name specific reference files for the agent to read (`references/docker.md`, `references/realtime.md`, `references/database.md`, `references/email.md`). The skill picks references itself; prompts only state the requirement. Touched 02-shop, 03-jobs-board, 04-media-vault, 07-saas, 09-internal-ops.
-
-## 26.20.2 — 2026-05-12
-
-### Added
-- `skills/seedkit-slim/SKILL.md` — slim questionnaire-only variant. Same groups, package names, and defaults as the full skill; no references, no snippets, no procedural guidance. For runs where the model already knows how to wire each package and only needs requirements gathered.
-
-### Changed
-- Testcases (01-09) and `testcases/README.md` aligned with the new model: no `Dockerfile.dev`, no dev `web` / `worker` compose services, no `simple` / `override` Docker-structure choice. Cases that previously picked docker-compose dev (04 media-vault, 07 saas, 08 startup, 09 internal-ops) now run Django + workers on the host via `uv run …` and use `docker-compose.yml` for local services only (`db`, `redis`, `minio`, `mailpit`). 04's devcontainer assertion switched to the uv-on-host shape (Python image + uv feature + `${containerWorkspaceFolder}/.venv/bin/python`). 07's prod Dockerfile is now multi-stage (was single-stage); managed-deploy `release_command` and SSH deploy `worker` snippet use `python manage.py …` (no `uv run` in the slim runtime). Coverage rules in `testcases/README.md` drop the "Local dev mode" dimension.
-- Dev mode is always uv-on-host — `SKILL.md` no longer asks "uv on host vs docker-compose" or "Docker structure simple/override". `docker.md` rewritten around a single production multi-stage Dockerfile (uv builder → `python:3.12-slim-bookworm` runtime) and a slim local-services `docker-compose.yml` (Postgres / Redis / Mailpit / MinIO only — never a `web` service). Workers (`tasks-celery.md`, `tasks-django-{db,rq,cron}.md`) run on the host alongside `manage.py runserver` via `uv run …`. `devcontainer.md` collapses to the uv-on-host flavour. `database.md` Variant C ("full stack in docker-compose") removed. `redis.md` local block publishes `127.0.0.1:6379`; `realtime.md` local section runs uvicorn on the host. `existing-project.md` detection drops the `simple` / `override` dev-mode flavour.
-- `SKILL.md` Common pitfalls now carries the central rule: `uv run …` on the host, `python …` inside any container — the runtime slim image has no `uv` binary.
-- Testcase boot-check cleanup drops `pkill -f 'manage.py'` — contradicted the `SKILL.md` rule against `pkill -f` and the harness already sweeps the process group.
-
-### Fixed
-- `database.md` Litestream Dockerfile snippet now bakes `litestream.yml` + `entrypoint.sh` into the image (with `ENTRYPOINT`/`CMD`) instead of leaving the entrypoint's `/etc/litestream.yml` path dangling for a compose bind-mount that silently failed when the config sat at the project root.
-- `ci.md` env block calls out that `DATABASE_URL` must stay set regardless of DB choice and shows the SQLite alternative inline — agents adapting the Postgres snippet were dropping the var entirely and tripping the `DEBUG=False` `env.NOTSET` branch on import. Same block now lists opt-in `POSTMARK_SERVER_TOKEN` / `ANYMAIL_WEBHOOK_SECRET` placeholders for projects wiring `django-anymail`, which otherwise tripped the same gated-import branch in `manage.py check --deploy` and `pytest`.
-- Migration / collectstatic invocations inside containers now use `python manage.py …` consistently across `deploy-vps.md`, `deploy-github-ssh.md`, `storage-s3.md`, `dev-tasks.md`, and `docker.md` "Waiting for Postgres". Previous `uv run` form broke deploys whose runtime stage is `python:3.X-slim-bookworm` (no `uv` binary).
-- `devcontainer.md` interpreter path was `/app/.venv/bin/python`, but the project venv lives at `/opt/venv/bin/python` per `docker.md`. VS Code's Python extension now resolves the right interpreter.
-- `storage-s3.md` "delete this RUN" snippet referenced `/app/.venv/bin/python manage.py collectstatic`, but `docker.md` writes the line as `python manage.py collectstatic`. VPS deploy block also corrected from `docker-compose.prod.yml` to `deploy/docker-compose.prod.yml`.
-- `logging.md` Celery wiring is now framed as a one-line delta to the existing `config/celery.py` from `tasks-celery.md` instead of a full file rewrite that silently dropped `os.environ.setdefault` / `config_from_object` / `autodiscover_tasks`.
-- `robots.md` declares `ROBOTS_DISALLOW_ALL = env.bool("ROBOTS_DISALLOW_ALL", default=False)` in settings — the documented `.env` toggle was a no-op without it.
-- `dev-tools.md` orbit MCP config sets `DJANGO_SETTINGS_MODULE=config.settings.local` (split layout); single-file layout fallback noted inline.
-- `SKILL.md` pitfall about deleting the hardcoded `DATABASES` block no longer claims Option B "writes `base.py` from scratch" — Option B replaces values in place too. `new-project.md` Option B carries the explicit delete instruction.
-- `auth.md` allauth and `auth-hardening.md` axes settings use `INSTALLED_APPS += [...]` / `MIDDLEWARE += [...]` instead of full re-assignment. Re-declaring the lists in `base.py` would have dropped `production.py` insertions (WhiteNoise position, CSP middleware).
-- `ci.md` runs `manage.py check --deploy --fail-level WARNING` against `config.settings.production` before tests — surfaces security-setting regressions at CI time.
-- `new-project.md` `test.py` adds `CELERY_TASK_ALWAYS_EAGER = True` / `CELERY_TASK_EAGER_PROPAGATES = True` alongside the existing `django.tasks` Immediate backend.
-- `deploy-github-ssh.md` deploy script uses plain `'{{.State.Health.Status}}'` instead of the Liquid-style `{{ '{{' }}.State.Health.Status{{ '}}' }}` escape — GitHub Actions only evaluates `${{ ... }}` expressions, so single-quoted `{{ ... }}` inside a `script:` block passes through unchanged. The escape was unnecessary and harder to read.
-- `ci.md` `services:` now includes an opt-in `redis:` block alongside `postgres:` for projects using `cache` / `celery` / `django-tasks-rq`. The `REDIS_URL` env was already there, but the matching service wasn't.
-- `analytics.md` ships a minimal `templates/base.html` stub for the `frontend: none` case so the `{% include "_analytics.html" %}` resolves. `csp.md` shows the env-driven Umami integration explicitly (`ANALYTICS_HOST` → `script-src` / `connect-src`). `gdpr.md` provides copy-paste `export_user_data` / `delete_user_data` management commands instead of just naming them.
-- `tasks-django-rq.md` / `tasks-django-db.md` drop `django-tasks` from `uv add` (Django 6 ships `django.tasks` in stdlib; the standalone package shadows it). `tasks-django-rq.md` also adds the `include("django_rq.urls")` wiring — bare `django_rq.urls` is a module, not a URLconf, and raised `TypeError` at URL load.
-- Testcase 07-saas aligns structural assertions with skill design: `deploy/docker-compose.prod.yml` / `deploy/Caddyfile` paths (per `deploy-vps.md`), `/opt/venv/bin` on PATH (per `docker.md`), CI runs `pytest` without a pre-`migrate` step (per `ci.md`), and `INSTALLED_APPS` only registers `django_tasks_db` since Django 6's `django.tasks` is in core.
-- `dev-tools.md` prod `silk_profile` fallback is now a class implementing `__call__` + `__enter__`/`__exit__`, not a decorator factory — the same reference shows `with silk_profile(...)` inside `@task` bodies, which raised `AttributeError` on prod boot.
-- `auth-hardening.md` promotes `AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler'` from a Pitfalls aside to a `production.py` code snippet; agents now copy the line into `production.py` instead of skipping it.
-- `docker.md` Variant B multi-stage final stage is named `AS prod` (was `AS runtime`) so testcases that assert a `prod` target match the slim-runtime path.
-
-### Changed
-- `docker.md` BuildKit cache mount (`--mount=type=cache,target=/root/.cache/uv`) is now standard on every `RUN uv sync`, with `# syntax=docker/dockerfile:1` at the top of each Dockerfile. Was framed as "optional, speeds up CI"; it's actually load-bearing whenever a multi-stage build re-runs `uv sync` on Rust/C-backed packages without a manylinux/aarch64 wheel (e.g. `django-bolt` on linux/arm64) — without the cache mount the wheel recompiles in each stage.
-- `typecheck.md` Pragmatics: documents that `get_user_model()` returns the generic `_UserModel` stub, with the `TYPE_CHECKING` import + annotation pattern as the idiomatic fix (instead of `getattr`).
-- Testcases 04/06/07/08/09 relax `pages` app assertion to `pages/views.py (or equivalent — config/views.py is fine)`, matching the skill's recent move of trivial views to `config/views.py`.
-- Testcase 02-shop deploy check passes `EMAIL_URL` / `DEFAULT_FROM_EMAIL` / `DJANGO_SECURE_SSL_REDIRECT=False` to the prod containers and uses a ≥ 50-char `DJANGO_SECRET_KEY`; structural assertions for Tailwind+DaisyUI sources moved to `tailwind-src/css/` and the spurious root `docker-compose.yml` requirement (dev mode is uv-on-host) dropped. Health/robots view assertions now point at `config/views.py` (matching `healthcheck.md` / `robots.md`) and `EMAIL_BACKEND` assertion quotes the `env.email_url` line in `base.py` instead of expecting it in `local.py`.
-
-- `docker.md` venv moves to `/opt/venv` via `UV_PROJECT_ENVIRONMENT` so the `.:/app` bind-mount can't shadow it. Drops the anonymous `- /app/.venv` shadow volume from `web` and every worker compose service (`tasks-celery.md`, `tasks-django-db.md`, `tasks-django-rq.md`, `tasks-django-cron.md`). Cleaner cleanup — no `<project>_xxxx` hash-named anon volumes left over after `docker compose down -v`.
-- Testcase cleanup now runs `docker compose down -v --rmi local` (was `down -v`) so the compose-built dev image is removed alongside the volumes. Pulled base images (postgres/redis/mailpit/minio) stay shared.
-
-### Fixed
-- `tailwind.md` DaisyUI inputs (`source.css`, `daisyui.mjs`, `daisyui-theme.mjs`) move to `tailwind-src/css/`, **outside** `STATICFILES_DIRS`. With them inside, `CompressedManifestStaticFilesStorage` walks the source CSS and fails to resolve `@import "tailwindcss"` / `@plugin "./daisyui.mjs"` as static URLs (`MissingFileError: css/tailwindcss`). Only the compiled `tailwind.css` stays under `assets/`.
-- `tailwind.md` production Dockerfile passes `DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True` to **both** `tailwind build` and `collectstatic`. `manage.py` defaults to `local.py`, which demands `SECRET_KEY` / `DATABASE_URL` that don't exist at image-build time.
-- `security.md` `SECURE_SSL_REDIRECT` reads from `DJANGO_SECURE_SSL_REDIRECT` (default `True`). Smoke / staging / direct-gunicorn runs need to disable it; hardcoded `True` returns 301 on every plain-HTTP probe, hiding security headers and breaking smoke assertions. Also adds `SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]` to match the deliberate HSTS opt-outs.
-- `storage-s3.md` `production.py` static override is now guarded by `if AWS_STORAGE_BUCKET_NAME:`. ASGI projects load `production.py` in dev too; without the guard, an empty bucket env crashes every admin page with boto3 `ParamValidationError: Invalid bucket name ""`.
-- `docker.md` dev compose `db` service no longer publishes 5432 to the host — every machine with host-installed Postgres collides on bind. Containers talk over the compose network; comment-only opt-in for host GUIs.
-- `new-project.md` ships a concrete `config/settings/test.py` snippet including `TASKS = {"default": {"BACKEND": "django.tasks.backends.immediate.ImmediateBackend"}}` so split-layout projects get the eager test backend without reverse-engineering the path.
-- `SKILL.md` §4 foundation smoke uses `runserver --noreload` + a 5-attempt curl poll instead of `sleep 2`; documents that `kill %1` and `pkill -f manage.py` both break in this harness (no job control / matches parent claude) — use the recorded PID.
-- `SKILL.md` Common pitfalls: if i18n = no, drop the `USE_I18N = True` + `# Internationalization` block `startproject` emits.
-
-- `uv.md` Project cheat-sheet now shows `uv init --bare {project_name}` to match `new-project.md`. Without `--bare`, `uv init` ships `main.py` / `README.md` / `.python-version` and the agent then has to delete them. Surfaced by a gemini build that read `uv.md` first and skipped `--bare`.
-- `database.md` Litestream Dockerfile pre-creates `/data` and chowns it to `django` before `USER django`; the named SQLite volume mounts as root:root, so without this the prod container EACCES on first write.
-- `csp.md` GA4 row now expands into an explicit three-directive snippet; the previous table format led the agent to put only one host in `script-src`.
-- `auth-hardening.md` recommends `AXES_HANDLER = AxesCacheHandler` in `production.py` whenever Redis is in scope, not only "on heavy traffic".
-- `deploy-github-ssh.md` `.env.prod.example` heading now spells the full `deploy/.env.prod.example` path; the prior heading was ambiguous and the file got skipped while the compose file landed under `deploy/`.
-
-### Added
-- `run-tests.sh` learned `BUILD_CLI=gemini` — build phase now runs through `gemini -p --yolo --skip-trust` with a model defaulting to `gemini-2.5-pro`. Review phase still uses `claude -p` (the read-only Bash() allowlist is claude-specific). Skill is linked into the workspace via `gemini skills link --scope workspace --consent` when gemini is selected.
-
-### Changed
-- `dev-tools.md` orbit logging section no longer marked "optional" — wire the orbit log handler whenever orbit is installed, otherwise the dashboard misses log records.
-- SKILL.md pitfall: run `manage.py startapp <name>` **before** listing the app in `INSTALLED_APPS`. Otherwise `startapp` imports settings and crashes with `ModuleNotFoundError`.
-- SKILL.md preflight rule — name the references the agent must read before the first tool call of a new-project run (`new-project.md`, `database.md`, plus one per selected add-on). Surfaced by gemini-flash builds where the agent activated the skill but never read its references.
-- `robots.md` and `healthcheck.md` put trivial views in `config/views.py`, not a fresh `pages/` app. If a suitable existing app is present, host them there instead.
-- SKILL.md now tells the agent to scan the user's initial request for answers already given and treat them as decided — don't re-ask to confirm. Only ask when the answer is genuinely missing or ambiguous.
-- SKILL.md §8 README step requires the deploy command block from the matching `deploy-*.md` to be copied verbatim into a `## Deploy` section — surfaces the one-shot `manage.py migrate` step so first `up -d --build` doesn't hit an empty DB.
-- `deploy-vps.md` Caddyfile snippets call out that `example.com` needs replacing — Caddy fails TLS issuance for the placeholder domain.
-- `dev-tasks.md` generates `deploy-migrate` + `deploy` tasks when a deploy target was picked (vps / github-ssh / managed-fly). `deploy` depends on `deploy-migrate` so the one-shot migrate precedes `up -d`. Testcases 07/08/09 switch task runner to `mise` and assert the deploy tasks exist.
-- README adds a status note that the testcase harness currently runs only against Claude Sonnet.
-- `realtime.md` install line adds `daphne` (channels doesn't pull it transitively); routing snippet carries `# type: ignore[arg-type]` for `path(..., Consumer.as_asgi())`.
-- `storage-s3.md` adds a MinIO docker-compose snippet with a `curl` healthcheck (`wget` is absent in `minio/minio:latest`) and a note not to gate `web.depends_on` on it.
-- `email.md` Mailpit compose snippet adds a `wget /livez` healthcheck so `docker compose up -d --wait` actually blocks until SMTP is ready.
-- `devcontainer.md` compose flavour gains `forwardPorts: [8000]`; testcase 04 venv-volume assertion aligns with the anonymous `/app/.venv` shown in `docker.md`.
-- `tasks-django-rq.md` aligned with Django 6.0 core: drops `django-tasks` from the `uv add` line (pulled transitively by `django-tasks-rq`) and points the API import at `from django.tasks import task` instead of `django_tasks`.
 

@@ -57,6 +57,10 @@ Add the matching links to `<head>` only for files actually produced:
 
 ```sh
 uv run manage.py runserver --noreload &
+PID=$!
+for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/ > /dev/null && up=1 && break; sleep 1; done
+[ -n "$up" ] || echo "BOOT CHECK FAILED"
 curl -sf http://127.0.0.1:8000/ | grep -q 'favicon.svg'
 curl -sf http://127.0.0.1:8000/static/favicon.svg | grep -q '<svg'
+kill "$PID"
 ```

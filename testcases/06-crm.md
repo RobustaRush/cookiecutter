@@ -51,10 +51,12 @@ Run the foundation, the boot check, start `manage.py db_worker` in a second term
 createdb silk_db || true
 cd 06-silk-lab
 uv run manage.py migrate
-uv run manage.py runserver &
+uv run manage.py runserver --noreload &
+RUNSERVER_PID=$!
 uv run manage.py db_worker &
-sleep 2
-curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null
+WORKER_PID=$!
+for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && up=1 && break; sleep 1; done
+[ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; kill "$RUNSERVER_PID" "$WORKER_PID"; exit 1; }
 curl -sf http://127.0.0.1:8000/silk/ > /dev/null
 test "$(curl -sf http://127.0.0.1:8000/healthz)" = "ok"
 test "$(curl -sf http://127.0.0.1:8000/readyz)" = "ready"
@@ -62,7 +64,7 @@ uv run manage.py show_urls > /dev/null
 uv run manage.py lintmigrations
 uv run ruff check .
 uv run pytest; rc=$?; [ "$rc" -eq 0 ] || [ "$rc" -eq 5 ]   # exit 5 = no tests collected (empty scaffold)
-kill $(jobs -p) 2>/dev/null; wait
+kill "$RUNSERVER_PID" "$WORKER_PID"
 dropdb silk_db
 ```
 

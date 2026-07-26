@@ -6,10 +6,10 @@ Django 6.0 ships the `django.tasks` API in core: vendor-neutral `@task` decorato
 
 Ask the user:
 
-- **Database** — `tasks-django-db.md`. Simplest, no extra infrastructure.
-- **Redis Queue** — `tasks-django-rq.md`. Needs Redis; better throughput.
+- **Database** — `references/tasks-django-db.md`. Simplest, no extra infrastructure.
+- **Redis Queue** — `references/tasks-django-rq.md`. Needs Redis; better throughput.
 
-Ask separately about **periodic tasks** (django-crontask) — `tasks-django-cron.md` if yes.
+Ask separately about **periodic tasks** (django-crontask) — `references/tasks-django-cron.md` if yes.
 
 ## Register tasks
 

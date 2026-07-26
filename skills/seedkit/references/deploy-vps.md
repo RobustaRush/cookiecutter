@@ -70,6 +70,36 @@ Every service added later (`redis`, `celery`, `celery-beat`, `ws`) gets the same
 
 Stock `postgres` ships `shared_buffers=128MB` — laptop sizing. On a dedicated box, add `command: postgres -c shared_buffers=<25% of RAM> -c effective_cache_size=<75% of RAM>` to the `db` service (<https://pgtune.leopard.in.ua/> generates the full set).
 
+## deploy/.env.prod.example — ship this in the repo
+
+Lives next to `deploy/docker-compose.prod.yml`. The compose file references many
+vars; without a checked-in template the first deploy fails with cryptic compose
+errors. Provide every var:
+
+```sh
+# Django
+DJANGO_SETTINGS_MODULE=config.settings.production   # the rqworker / db_worker
+                                                    # commands inherit this.
+                                                    # manage.py defaults to
+                                                    # config.settings.local —
+                                                    # without this, prod runs
+                                                    # with NO security hardening.
+DJANGO_SECRET_KEY=
+DJANGO_DEBUG=False
+DJANGO_ALLOWED_HOSTS=example.com,localhost,127.0.0.1   # localhost/127.0.0.1 for the in-container healthcheck
+DJANGO_CSRF_TRUSTED_ORIGINS=https://example.com
+DJANGO_BEHIND_PROXY=True            # Caddy terminates TLS; required for
+                                    # SECURE_SSL_REDIRECT to work right.
+DATABASE_URL=postgres://postgres:CHANGE_ME@db:5432/postgres
+REDIS_URL=redis://redis:6379
+WEB_CONCURRENCY=4                   # gunicorn worker count — 2×cores+1 sync, cores for uvicorn
+
+# Postgres
+POSTGRES_PASSWORD=CHANGE_ME
+```
+
+Every add-on appends its own vars here — same rule as `.env.example`.
+
 ## deploy/Caddyfile
 
 ```

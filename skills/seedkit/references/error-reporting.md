@@ -44,7 +44,22 @@ SENTRY_DSN=
 
 ```sh
 SENTRY_DSN=<dsn>
-SENTRY_RELEASE=${GIT_SHA}
+```
+
+`SENTRY_RELEASE` comes from the image, not `.env.prod` — the commit is known at
+build time, not at run time. In the production Dockerfile's `prod` stage:
+
+```dockerfile
+ARG GIT_SHA=unknown
+ENV SENTRY_RELEASE=${GIT_SHA}
+```
+
+and pass it from CI — in `references/deploy-github-ssh.md`, add to the
+`docker/build-push-action` step:
+
+```yaml
+          build-args: |
+            GIT_SHA=${{ github.sha }}
 ```
 
 ---
@@ -93,7 +108,10 @@ services:
     image: glitchtip/glitchtip:latest
     command: ./bin/run-celery-with-beat.sh
     restart: unless-stopped
-    env_file: .env.prod
+    environment:                            # GlitchTip's own config, not the app's
+      DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD}@glitchtip-db:5432/glitchtip
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
+      REDIS_URL: redis://redis:6379/5
     depends_on: [glitchtip-db, redis]
 
   glitchtip-db:

@@ -49,7 +49,7 @@ primary_region = "iad"
     port = 443
     handlers = ["tls", "http"]
 
-  # Gate rollouts on readiness when health endpoints exist (references/health.md):
+  # Gate rollouts on readiness when health endpoints exist (references/healthcheck.md):
   [[services.http_checks]]
     interval = "15s"
     timeout  = "2s"

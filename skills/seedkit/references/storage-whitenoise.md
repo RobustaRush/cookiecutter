@@ -44,7 +44,7 @@ STORAGES = {
 
 (Single-file layout: gate both on `not DEBUG`.)
 
-`CompressedManifestStaticFilesStorage` is the only switch needed for compression + hashed filenames. `WHITENOISE_COMPRESS` / `WHITENOISE_USE_FINDERS` don't exist.
+`CompressedManifestStaticFilesStorage` is the only switch needed for compression + hashed filenames.
 
 `STORAGES` (Django 4.2+) replaces legacy `STATICFILES_STORAGE` and `DEFAULT_FILE_STORAGE`. Don't set the legacy keys alongside it.
 

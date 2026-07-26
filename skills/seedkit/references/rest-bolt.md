@@ -14,7 +14,7 @@ uv add django-bolt msgspec
 
 `msgspec` is a transitive dep of `django-bolt`, but the API module imports it directly — pin it explicitly so the lockfile records it as a runtime dep.
 
-The wheel includes a precompiled Rust extension. uv pulls it on x86_64 / arm64 macOS and x86_64 Linux without a toolchain. **No aarch64-linux wheel** is published, so a native `linux/arm64` Docker build (the default on Apple Silicon) falls back to compiling from source. Pin both stages to `linux/amd64` instead — uv then installs the published `manylinux2014_x86_64` wheel, so no `build-essential`, no source build, and the image matches Fly's default amd64 machines:
+The wheel includes a precompiled Rust extension; uv installs it on x86_64 / arm64 macOS and on x86_64 and aarch64 Linux without a toolchain. Pin both stages to `linux/amd64` when the deploy target is amd64 (Fly's default machines) so the image built on an Apple Silicon host matches the one that runs in production:
 
 ```dockerfile
 FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.13-trixie-slim AS builder
@@ -82,8 +82,8 @@ Schemas must be `msgspec.Struct` — django-bolt is bound to msgspec and does no
 
 Two servers, two ports:
 
-- `python manage.py runserver` — admin, classic Django views.
-- `python manage.py runbolt --dev` — Bolt API on its own port.
+- `uv run manage.py runserver` — admin, classic Django views, port 8000.
+- `uv run manage.py runbolt --dev --port 8001` — Bolt API. `runbolt` also defaults to 8000, so the port flag is required or the second process fails to bind.
 
 Document both in `README.md`. In production, deploy `runbolt` behind the same reverse proxy as gunicorn (different upstream blocks, different paths). The README states "no gunicorn or uvicorn needed" for the Bolt side specifically.
 
@@ -136,10 +136,10 @@ Run bolt against the slim settings; leave the full stack on the regular settings
 
 ```sh
 # API process (high RPS path)
-DJANGO_SETTINGS_MODULE=config.settings.bolt python manage.py runbolt --dev
+DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev --port 8001
 
 # Admin / classic views (separate process, full middleware stack)
-python manage.py runserver
+uv run manage.py runserver
 ```
 
 In production: same split — bolt service uses `DJANGO_SETTINGS_MODULE=config.settings.bolt`, gunicorn uses `config.settings.production`. Reverse proxy routes `/api/*` to bolt, everything else to gunicorn.
@@ -165,16 +165,15 @@ Auto-generated. The library ships Swagger, ReDoc, Scalar, and RapidDoc UIs — p
 Standard `migrate` + `createsuperuser` first. Then verify the Bolt server boots:
 
 ```sh
-python manage.py runbolt --dev &
+uv run manage.py runbolt --dev --port 8001 &
 BOLT_PID=$!
 for i in $(seq 1 30); do
-  curl -sf http://127.0.0.1:8000/users/1 && break
+  curl -sf http://127.0.0.1:8001/users/1 > /dev/null && up=1 && break
   sleep 1
 done
 kill "$BOLT_PID"
+[ -n "$up" ] || echo "BOOT CHECK FAILED"
 ```
-
-(Adjust the port to whatever `runbolt --dev` reports.)
 
 ## Pitfalls
 

@@ -4,21 +4,21 @@ Docs: <https://django-modern-rest.readthedocs.io/>
 
 Typed REST framework for Django. Sits inside the normal request/response cycle — no new runtime. Sync or async handlers; pluggable schema libs (pydantic, msgspec, attrs, dataclasses, TypedDict).
 
-Requires `django>=4.2`, Python 3.11+.
+Requires `django>=5.0`, Python 3.11+.
 
 ## Install
 
 `msgspec` is the recommended schema engine (fastest JSON path). Add it as the default:
 
 ```sh
-uv add 'django-modern-rest[msgspec,openapi]' pyjwt
+uv add 'django-modern-rest[msgspec,openapi]'
 ```
 
-`pyjwt` is a transitive dependency that isn't pinned through the extras chain — pin it explicitly so a fresh `uv sync` resolves cleanly.
+Add the `jwt` extra (`'django-modern-rest[msgspec,openapi,jwt]'`) only when the user wants dmr's JWT auth — it brings `pyjwt[crypto]`.
 
 If the user wants pydantic schemas instead, swap `msgspec` → `pydantic`. Both extras can co-exist.
 
-There is no `INSTALLED_APPS` entry to add — the package is library-only and ships no Django app, models, or migrations.
+Add `'dmr'` to `INSTALLED_APPS` only to serve the OpenAPI UI's static files (needs `django.contrib.staticfiles` with `AppDirectoriesFinder`). Plain endpoints and a YAML/JSON schema view need no app entry.
 
 ## Layout
 
@@ -113,5 +113,5 @@ curl -sf -X POST http://127.0.0.1:8000/api/users/ \
 ## Pitfalls
 
 - Don't put controllers in `config/` — Django app discovery only scans `INSTALLED_APPS`.
-- Don't add `dmr` (or `django_modern_rest`) to `INSTALLED_APPS`. It isn't a Django app.
+- `dmr` belongs in `INSTALLED_APPS` only for the OpenAPI UI's static files — see Install. Adding it for plain endpoints buys nothing.
 - Pre-1.0 release; pin a known-good version in `pyproject.toml` rather than relying on `>=`.

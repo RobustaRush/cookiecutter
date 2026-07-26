@@ -77,10 +77,20 @@ For SQLite, skip the compose file entirely — Django writes to `db.sqlite3` nex
 ### Boot check
 
 ```sh
-docker compose up -d
+docker compose up -d --wait
 uv run manage.py migrate
 uv run manage.py runserver
 ```
+
+`--wait` blocks on the compose-side healthchecks and exits non-zero if a service
+never becomes healthy. Without it, `up -d` returns as soon as containers are
+*running* and the next command races the service's listener. Give every service
+a `healthcheck:` block so `--wait` has something to wait on — that is the whole
+mechanism, so a service without one is waited on only for `running`.
+
+Don't poll `docker compose ps --format json` to hand-roll a readiness loop.
+Compose v2.6+ emits newline-delimited JSON, not an array, so `json.load` reads
+the whole stream and raises — the loop then never exits successfully.
 
 ---
 
@@ -119,6 +129,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # DJANGO_DEBUG=True unlocks dev defaults so collectstatic boots without
 # real SECRET_KEY / DATABASE_URL. SETTINGS_MODULE → production so STORAGES
 # (manifest static storage) applies; otherwise manage.py uses local.py.
+# Split layout: `config.settings.production`; single-file: `config.settings`.
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     /opt/venv/bin/python manage.py collectstatic --noinput
 

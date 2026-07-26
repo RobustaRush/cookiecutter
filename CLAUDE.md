@@ -5,7 +5,7 @@ Claude Code skill for bootstrapping Django projects + the testcase harness that 
 Layout:
 - `skills/seedkit/SKILL.md` + `skills/seedkit/references/*.md` — the skill itself.
 - `testcases/0[1-9]-*.md` — scripted runs that exercise the skill end-to-end.
-- `train/` — the testcase harness: `run-tests.sh` pipes each testcase through an agent CLI and writes per-run logs; `run-baseline.sh` generates the no-skill control group; `review-logs.sh` auto-patches the skill from those logs; `agents.sh` is the shared multi-CLI (claude/gemini/codex/agy) dispatch the three scripts source.
+- `train/` — the testcase harness: `run-tests.sh` pipes each testcase through an agent CLI and writes per-run logs; `run-baseline.sh` generates the no-skill control group; `review-logs.sh` auto-patches the skill from those logs; `agents.sh` is the shared multi-CLI (claude/codex/agy) dispatch the three scripts source.
 - `workspace/` — gitignored scratch where generated projects live; wiped between runs.
 
 ## Writing reference files
@@ -45,7 +45,7 @@ The reviewer prompt at the bottom of every testcase is identical and short: repo
 
 ## train/run-tests.sh contract
 
-Each case runs in its own session (portable `setsid_exec` Python shim, `train/agents.sh`) so the post-case sweep `kill -- -$pgid` reaches every descendant — orphaned celery workers, gunicorn, `runserver` autoreloader. A watchdog (default `TIMEOUT_PER_CASE=7200`) terminates the group if the case overruns. Cleanup is harness-side; the skill and testcase prompts must not invoke `pkill -f` (it matches the parent agent-CLI process).
+Each case runs in its own session (portable `setsid_exec` Python shim, `train/agents.sh`) so the post-case sweep `kill -- -$pgid` reaches every descendant — orphaned celery workers, gunicorn, `runserver` autoreloader. A watchdog terminates the group if a phase overruns — `TIMEOUT_PER_PHASE` (7200) in `run-tests.sh`, `TIMEOUT_PER_CASE` (3600) in `run-baseline.sh`. Cleanup is harness-side; the skill and testcase prompts must not invoke `pkill -f` (it matches the parent agent-CLI process).
 
 Generated projects land in `../seedkit-examples/` (the sibling submodule). Per-run logs land in `../seedkit-examples/logs/` (gitignored inside that repo). The harness prepends each testcase's `## Prompt` block to the generated project's `README.md` and writes a top-level `seedkit-examples/README.md` index after every run.
 

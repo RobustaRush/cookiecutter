@@ -43,8 +43,10 @@ Run the foundation, the boot check (migrate + createsuperuser), and confirm /adm
 ```sh
 cd 01-minimal-blog
 uv run manage.py runserver --noreload &
-for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && break; sleep 1; done
-kill $(jobs -p) 2>/dev/null; wait
+RUNSERVER_PID=$!
+for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && up=1 && break; sleep 1; done
+kill "$RUNSERVER_PID"
+[ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; exit 1; }
 test -f AGENTS.md && grep -qx '@AGENTS.md' CLAUDE.md
 ```
 

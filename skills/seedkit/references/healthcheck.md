@@ -47,7 +47,7 @@ No trailing slash — kubelets / Caddy / Fly probes call exactly `/healthz`.
 ## Deploy wiring
 
 - **Caddy / nginx** (`references/deploy-vps.md`): `health_uri /healthz` block on the upstream.
-- **Fly.io** (`references/deploy-managed.md`): under `[checks]` in `fly.toml`, `path = "/readyz"`, `interval = "10s"`.
+- **Fly.io** (`references/deploy-managed.md`): a `[[services.http_checks]]` block in `fly.toml` with `path = "/readyz"`.
 - **GitHub Actions deploy** (`references/deploy-github-ssh.md`): post-deploy curl `/readyz` before declaring success.
 
 If any deploy reference is applied, **also** add the matching probe wiring there. Don't leave the endpoint dangling.

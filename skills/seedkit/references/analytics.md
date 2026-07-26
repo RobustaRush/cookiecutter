@@ -104,8 +104,12 @@ services:
     restart: unless-stopped
     environment:
       GOATCOUNTER_LISTEN: ":8080"
+      # Point the DB at the mounted volume explicitly. The image's default
+      # path is relative to its workdir, so a volume mounted anywhere else
+      # leaves the SQLite file inside the container — gone on recreate.
+      GOATCOUNTER_DB: "sqlite+/home/goatcounter/goatcounter-data/goatcounter.sqlite3"
     volumes:
-      - goatcounter_data:/home/user/db
+      - goatcounter_data:/home/goatcounter/goatcounter-data
 
 volumes:
   goatcounter_data:

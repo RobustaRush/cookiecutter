@@ -31,8 +31,9 @@ Don't ask Foundation questions. Read them off the repo:
 
 - **Database engine** → `DATABASES['default']['ENGINE']`.
 - **Local Postgres** → `db` service in `docker-compose.yml` → Postgres-in-Docker; otherwise host Postgres (or SQLite per the engine above).
-- **Settings layout** → single `settings.py` vs `settings/` package with `base.py` / `local.py` / `production.py`.
+- **Settings layout** → single `settings.py` vs `settings/` package with `base.py` / `local.py` / `production.py`. When it's split, settings added by any add-on follow the delta rule in `references/new-project.md`.
 - **Custom user** → `AUTH_USER_MODEL` set to anything other than `auth.User`.
+- **Request handling** → `channels` in `INSTALLED_APPS` (or an `asgi.py` wrapping `ProtocolTypeRouter`) → `asgi+channels`; a `uvicorn` / `UvicornWorker` command in the Dockerfile or deploy artefacts → `asgi`; otherwise `wsgi`. SKILL.md §5.7 and `references/async.md` both branch on this value, so record it even when no question follows.
 
 If a downstream reference needs a foundation answer, use the detected value. Don't surprise the user with a layout change (e.g. don't split a single `settings.py` into a package unless they asked).
 

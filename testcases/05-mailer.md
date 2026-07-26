@@ -42,8 +42,10 @@ Run the foundation + boot check. Spin up Mailpit via a one-service `docker-compo
 cd 05-orbit-demo
 docker compose up -d mailpit
 uv run manage.py migrate
-uv run manage.py runserver &
-curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null
+uv run manage.py runserver --noreload &
+RUNSERVER_PID=$!
+for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && up=1 && break; sleep 1; done
+[ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; kill "$RUNSERVER_PID"; exit 1; }
 curl -sf http://127.0.0.1:8000/orbit/ > /dev/null
 curl -sf http://127.0.0.1:8025/ > /dev/null
 test "$(curl -sf http://127.0.0.1:8000/healthz)" = "ok"
@@ -55,7 +57,7 @@ TOTAL=$(curl -sf http://127.0.0.1:8025/api/v1/messages | python3 -c 'import json
 test "$TOTAL" -ge 1
 uv run ruff check .
 ! docker compose logs mailpit 2>&1 | grep -iE 'fatal|panic'
-kill $(jobs -p) 2>/dev/null; wait
+kill "$RUNSERVER_PID"
 docker compose down -v --rmi local
 ```
 

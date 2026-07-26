@@ -43,6 +43,10 @@ Key order inside a service: `image` → `restart` → `volumes` → `environment
 
 `SESSION_COOKIE_SAMESITE = "Lax"` (`gdpr.md`) is the default posture. `cors.md` switches it to `"None"` only when a frontend on another origin authenticates with session cookies; that condition wins when both references are applied.
 
+## Version pins
+
+Pinned artifacts in references age between skill releases: GitHub Actions tags, `.pre-commit-config.yaml` revs, base-image tags, downloaded binaries (Litestream, Tailwind CLI, DaisyUI). Before writing one into the project, resolve the current release — `uv run pre-commit autoupdate` after writing the pre-commit config; `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name` (or the releases page) for actions and binaries. Keep the major version the reference states unless it no longer exists.
+
 ## Python version
 
 `requires-python = ">=3.12"` is the floor. Every concrete pin — Docker base image, devcontainer, mise `[tools]`, pyright `pythonVersion` — is 3.13. Bump them together.

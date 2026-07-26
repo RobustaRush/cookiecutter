@@ -98,25 +98,23 @@ First run downloads the CLI to `<BASE_DIR>/.django_tailwind_cli/` and creates an
 
 ## Production build
 
-The compiled CSS must be in `STATIC_ROOT` before `collectstatic` runs.
+The compiled CSS must exist in `STATICFILES_DIRS[0]` before `collectstatic` runs.
 
-In a Dockerfile, add `tailwind build` after `uv sync` and before `collectstatic`:
+In the multi-stage Dockerfile from `references/docker.md`, add this RUN to the
+builder stage immediately above the `collectstatic` RUN that file already owns:
 
 ```dockerfile
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
-    python manage.py tailwind build
-RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
-    python manage.py collectstatic --noinput
+    /opt/venv/bin/python manage.py tailwind build
 ```
 
-Both steps need the production settings + `DJANGO_DEBUG=True` shim:
+The step needs the production settings + `DJANGO_DEBUG=True` shim:
 `manage.py` defaults to `local.py`, which requires env vars (`SECRET_KEY`,
 `DATABASE_URL`) that don't exist at image-build time. `DJANGO_DEBUG=True`
-keeps those gated as dev-only.
+keeps those gated as dev-only. `/opt/venv/bin/python` because the builder
+stage never puts the venv on `PATH` — only the prod stage does.
 
 `tailwind build` produces a minified, purged CSS file at `STATICFILES_DIRS[0] / "css" / "tailwind.css"` (configurable via `TAILWIND_CLI_DIST_CSS`). `collectstatic` then picks it up and WhiteNoise / S3 serves it.
-
-In the multi-stage Dockerfile from `references/docker.md`, run `tailwind build` in the builder stage's `RUN` block alongside `collectstatic`.
 
 ## DaisyUI (optional)
 
@@ -241,7 +239,7 @@ A working integration: `curl -sf /` returns 200, the response body contains `tex
 
 ## Custom error templates (404 / 403 / 500)
 
-Apply when the user opts into custom error pages (follow-up question after Frontend; default **yes** when Tailwind is selected). Without these, a 500 in production renders Django's default page — visually inconsistent with the rest of the site.
+Apply when the user opts into custom error pages (follow-up question after Frontend; default **no**). Without these, a 500 in production renders Django's default page — visually inconsistent with the rest of the site.
 
 Django picks up `404.html`, `403.html`, `500.html` from the project's template root automatically (no URL wiring) when `DEBUG = False`. They render with **no** request context — `RequestContext` is unavailable for 500. Keep them static.
 

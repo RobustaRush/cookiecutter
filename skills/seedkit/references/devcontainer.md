@@ -17,7 +17,7 @@ Skip this when the user works in a plain shell — there's nothing else to set u
   },
   "postCreateCommand": "uv sync --frozen",
   "containerEnv": {
-    "DJANGO_SETTINGS_MODULE": "config.settings.local"
+    "DJANGO_SETTINGS_MODULE": "config.settings.local"   // single-file layout: "config.settings"
   },
   "forwardPorts": [8000],
   "customizations": {

@@ -39,11 +39,13 @@ In `config/settings.py` (or `config/settings/local.py` for split):
 ```python
 if DEBUG:
     INSTALLED_APPS += ["orbit"]
-    # Insert AFTER SecurityMiddleware (index 0) so SSL redirect / HSTS / host
-    # validation still run first. Putting Orbit at index 0 lets it observe
-    # requests that SecurityMiddleware would have rejected — the data is
-    # noisy and the security stack should be honoured even in dev.
-    MIDDLEWARE.insert(1, "orbit.middleware.OrbitMiddleware")
+    # Insert AFTER SecurityMiddleware so SSL redirect / HSTS / host validation
+    # still run first. Putting Orbit ahead of it lets it observe requests that
+    # SecurityMiddleware would have rejected — the data is noisy and the
+    # security stack should be honoured even in dev. Compute the index rather
+    # than hardcoding 1; another add-on may already have prepended middleware.
+    sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
+    MIDDLEWARE.insert(sec_idx + 1, "orbit.middleware.OrbitMiddleware")
 
     ORBIT_CONFIG = {
         "IGNORE_PATHS": ["/orbit/", "/static/", "/media/"],

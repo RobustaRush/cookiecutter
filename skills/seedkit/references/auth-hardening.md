@@ -74,7 +74,7 @@ AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler'
 Pick the matching package for the chosen Auth flow:
 
 - **`django-allauth`** → use the built-in **`allauth.mfa`** (`uv add 'django-allauth[mfa]'`). MFA ships inside django-allauth itself; the third-party `allauth-2fa` package is unmaintained — do **not** install it. Add `allauth.mfa` to `INSTALLED_APPS`, include `allauth.mfa.urls` in the `accounts/` include, and run migrations. Users opt in from the account page; templates ship with allauth.
-- **`django-mail-auth` or stock auth** → use **`django-otp`** + `django-otp-totp` (`uv add 'django-otp[qrcode]'`). Adds `django_otp`, `django_otp.plugins.otp_totp` to `INSTALLED_APPS`, `django_otp.middleware.OTPMiddleware` to `MIDDLEWARE` (after `AuthenticationMiddleware`). Wire admin login through `django_otp.admin.OTPAdminSite` if 2FA on `/admin/` is wanted.
+- **`django-mail-auth` or stock auth** → use **`django-otp`** with its bundled TOTP plugin (`uv add 'django-otp[qrcode]'`). Adds `django_otp`, `django_otp.plugins.otp_totp` to `INSTALLED_APPS`, `django_otp.middleware.OTPMiddleware` to `MIDDLEWARE` (after `AuthenticationMiddleware`). Wire admin login through `django_otp.admin.OTPAdminSite` if 2FA on `/admin/` is wanted.
 
 For both: run migrations, then ship a UI flow for the user to enrol a TOTP secret (`allauth.mfa` includes templates; `django-otp` does not — wire your own).
 
@@ -84,7 +84,6 @@ For both: run migrations, then ship a UI flow for the user to enrol a TOTP secre
 # Configures the enrolled factors and issuer name; enrollment stays opt-in from
 # the account page — allauth.mfa has no setting that forces MFA at login.
 MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="example.com")
-ACCOUNT_LOGIN_METHODS = {"email"}      # already set by Auth — re-stating intent
 MFA_SUPPORTED_TYPES = ["totp", "recovery_codes"]
 ACCOUNT_REAUTHENTICATION_REQUIRED = True
 ```

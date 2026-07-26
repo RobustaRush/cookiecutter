@@ -33,12 +33,6 @@ def daily_report() -> None:
 
 `crontask`'s `@cron` calls `task.enqueue()` on whatever it wraps, so the decorated task must resolve through the same backend as the Database/Redis Queue worker — import `task` from the `django_tasks` backport, not Django 6's stdlib `django.tasks`.
 
-## Run (host)
-
-```sh
-uv run manage.py crontask
-```
-
 ## Local — run on the host
 
 ```sh
@@ -56,6 +50,7 @@ services:
     restart: unless-stopped
     command: python manage.py crontask
     env_file: .env.prod
+    logging: *logging
     depends_on:
       db:
         condition: service_healthy

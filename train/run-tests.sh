@@ -20,7 +20,7 @@
 # Usage (run from inside seedkit/train/):
 #   ./run-tests.sh                          # run all testcases (claude build)
 #   ./run-tests.sh 02 07                    # run specific ones
-#   MODEL=claude-opus-4-7 ./run-tests.sh    # override build model
+#   MODEL=claude-opus-5 ./run-tests.sh    # override build model
 #   BUILD_CLI=codex MODEL=gpt-5.2-codex ./run-tests.sh
 #   BUILD_CLI=agy ./run-tests.sh            # build with Antigravity (gemini-3.5-flash)
 #
@@ -48,7 +48,7 @@ case "$BUILD_CLI" in
     *) echo "BUILD_CLI must be one of: claude codex agy (got: $BUILD_CLI)" >&2; exit 1 ;;
 esac
 MODEL="${MODEL:-$DEFAULT_BUILD_MODEL}"
-REVIEW_MODEL="${REVIEW_MODEL:-claude-opus-4-7}"
+REVIEW_MODEL="${REVIEW_MODEL:-claude-opus-5}"
 # Hard ceiling per phase. The build phase occasionally improvises a bash
 # command that orphans a forking child tree under PID 1; bash's `wait`
 # then blocks forever. setsid + watchdog + post-phase pgrp sweep below
@@ -212,7 +212,7 @@ run_phase() {
     if [[ "$cli" == "agy" ]]; then
         prompt=$(printf '%s' "$prompt" \
             | sed 's|^/seedkit$|Use the seedkit skill to scaffold the project per the questionnaire below.|')
-        prompt="Shell-tool note: your run_shell_command runs each call synchronously and does not preserve & backgrounding across calls. When the smoke / deploy snippet uses &, jobs -p, or wait, run the whole snippet inside a single \"timeout 60 bash -c '...'\" invocation so it executes in one child shell and self-terminates.
+        prompt="Shell-tool note: your run_shell_command runs each call synchronously and does not preserve & backgrounding across calls. When the smoke / deploy snippet backgrounds a process with &, run the whole snippet inside a single \"timeout 60 bash -c '...'\" invocation so it executes in one child shell and self-terminates.
 
 $prompt"
     fi
@@ -257,10 +257,6 @@ for tc in "${FILES[@]}"; do
         if [[ -n "$boot_section" ]]; then
             printf 'After scaffolding completes, run these runtime smoke checks. Auto-fix any failure (the goal is a project that boots and the smoke pipeline returns clean):\n\n'
             printf '%s\n\n' "$boot_section"
-            printf 'Wait-for-services rules — observed pitfalls that have hung past runs:\n'
-            printf -- '- Use `docker compose up -d --wait` (or `--wait-timeout 60`) when the smoke depends on services being up. It blocks on the compose-side healthchecks and exits non-zero on failure. Don'\''t hand-roll a polling loop.\n'
-            printf -- '- Never pipe `docker compose ps --format json` into `json.load` — Compose v2.6+ emits newline-delimited JSON, not an array. `json.load` reads the whole stream and raises, your loop stays at exit 1, and the bash tool livelocks.\n'
-            printf -- '- If a service has no healthcheck declared, add one in `docker-compose.yml` rather than polling externally.\n\n'
         fi
         if [[ -n "$deploy_section" ]]; then
             printf 'Then exercise the **production artifact** end-to-end. This catches what the dev-mode boot can'\''t: missing prod deps, DEBUG=False breakage, `migrate --check` drift, `collectstatic` failures, missing security headers. Auto-fix any failure:\n\n'

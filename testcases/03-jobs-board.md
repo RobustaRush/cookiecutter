@@ -48,8 +48,10 @@ cd 03-jobs-board
 docker compose up -d
 docker compose ps
 uv run manage.py migrate
-uv run manage.py runserver &
-curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null
+uv run manage.py runserver --noreload &
+RUNSERVER_PID=$!
+for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && up=1 && break; sleep 1; done
+[ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; kill "$RUNSERVER_PID"; exit 1; }
 curl -sf http://127.0.0.1:8000/accounts/login/ > /dev/null
 test "$(curl -sf http://127.0.0.1:8000/healthz)" = "ok"
 test "$(curl -sf http://127.0.0.1:8000/readyz)" = "ready"
@@ -60,7 +62,7 @@ test -f justfile
 uv run python -c "from config import celery_app; celery_app.loader.import_default_modules(); print(sorted(t for t in celery_app.tasks if not t.startswith('celery.')))"
 # docker logs must not contain fatal errors:
 ! docker compose logs db redis 2>&1 | grep -iE 'fatal|panic|traceback'
-kill $(jobs -p) 2>/dev/null; wait
+kill "$RUNSERVER_PID"
 docker compose down -v --rmi local
 ```
 

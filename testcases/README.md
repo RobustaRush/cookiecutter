@@ -1,61 +1,52 @@
 # Seedkit test cases
 
-End-to-end checks for the `seedkit` skill. Each test case is a single self-contained prompt that fully specifies every answer the skill would otherwise ask for, so the AI can run it without stopping for clarification. After execution, the AI appends a **check report** to the same file describing what worked, what didn't, and which manual fixes were applied to make it work.
+End-to-end checks for the `seedkit` skill. Each test case is a single self-contained prompt that fully specifies every answer the skill would otherwise ask for, so the agent can run it without stopping for clarification.
 
 The point is to catch drift between the skill's references and reality (Django version bumps, uv flags, Docker quirks, package renames) by running real builds.
 
 ## How a test case is structured
 
-Each test case is one `.md` file:
+Each test case is one `.md` file with three sections — four when it exercises a production artefact. `train/run-tests.sh` extracts them by heading, so the names are exact:
 
 ```
 # <Title>
 
 ## Prompt
-<Single fully-specified instruction for `/seedkit`. No open questions.>
+<Fenced block: the literal `/seedkit` invocation plus every answer. No open
+questions. The harness also prepends this block to the generated project's
+README.md, so it doubles as the reproduction record.>
 
-## Expected outcome
-- Project boots (runserver or `docker compose up`)
-- `/admin/` login works after `createsuperuser`
-- <any add-on-specific check, e.g. "celery worker picks up a task">
+## Boot check
+<Fenced `sh` block the build agent runs after scaffolding. Boots the project,
+asserts endpoints, tears down. Auto-fixes are expected when one fails — the
+goal is a project that boots.>
 
-## Run
-<commands the AI should execute end-to-end>
+## Deploy check   (optional)
+<Fenced `sh` block exercising the production image: gunicorn, DEBUG=False,
+collectstatic, security headers. Catches what dev-mode boot can't.>
 
-## Check report
-Run `claude -p` from the project dir with `--model claude-opus-4-7`,
-restricted to read-only tools so the reviewer can't trigger the
-seedkit skill and rebuild the project. Tell the reviewer the
-project is a freshly generated *starter / scaffold* with no business
-logic on purpose, and list the intentional design decisions of the
-skill (gated `default=... if DEBUG else env.NOTSET`; `globals().update(env.email_url(...))`;
-`local.py` deltas-only; WhiteNoise `STORAGES` in `production.py` only;
-`wsgi.py`/`asgi.py` → production, `manage.py` → local; email-only custom
-user with `UserManager`; `ACCOUNT_EMAIL_VERIFICATION` optional in base /
-mandatory in production; SQLite default anchored to `BASE_DIR` via 4-slash
-absolute URL; `.env.example` is a dev template — `DJANGO_DEBUG=True` is
-correct there, prod env vars come from the deploy platform's secrets, not
-this file; `DATABASE_URL` is intentionally absent from `.env.example`
-because dev uses the in-code default; an empty `REVIEW.md` at the project
-root is the file the reviewer itself is writing to via `tee` — ignore it,
-it's not a skill artifact; production Dockerfile's `RUN ... DJANGO_DEBUG=True ... collectstatic` is intentional — it unlocks dev defaults so collectstatic boots without baking real SECRET_KEY / DATABASE_URL into the build context, while `DJANGO_SETTINGS_MODULE=config.settings.production` keeps `STORAGES` manifest behavior; `psycopg[binary]>=3.x` resolution claims may reflect an older training cutoff — the skill itself uses bare `'psycopg[binary]'` without a version pin (see `references/database.md`), so any specific-version complaint is agent improvisation, not a skill bug) so the reviewer doesn't keep flagging them as
-bugs. Word the prompt as "audit the existing code", not "review the
-Django project" — the latter pattern-matches the skill description and
-starts a build. Pipe the output to `REVIEW.md` inside the project
-(`| tee REVIEW.md`) so the report is persisted next to the code. Paste
-a digest below.
-
-- What worked out of the box: …
-- What broke: …
-- Fixes applied: …
-- Suggested skill changes: …
-
-## Cleanup
-<commands to drop external resources: host DBs, docker volumes, built
-images, deployed remote artifacts. Run *after* the review so the
-reviewer can still inspect a live stack. Leave the project code in
-place — the report references it.>
+## Review
+<Prompt for the independent reviewer — a fresh `claude -p` with read-only
+tools, run from the generated project dir with no knowledge of how the build
+went. Lists the structural facts to verify, then the standard filter.>
 ```
+
+### Boot-check rules
+
+- Capture the PID of anything backgrounded (`RUNSERVER_PID=$!`) and `kill` that. `kill $(jobs -p)` doesn't work — the harness runs the snippet in a non-interactive shell with no job control.
+- Use `--noreload` on `runserver` so the PID you captured is the process serving requests, not an autoreloader parent.
+- A readiness poll must report its own failure. `for i in …; do curl -sf … && break; sleep 1; done` exits 0 even when the server never came up. Set a flag inside the loop and test it after:
+
+```sh
+for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && up=1 && break; sleep 1; done
+[ -n "$up" ] || { echo "BOOT CHECK FAILED"; kill "$RUNSERVER_PID"; exit 1; }
+```
+
+### Review-section rules
+
+The reviewer prompt is short and identical across cases: verify the listed structural facts quoting the literal substring read, report only boot-blockers / assertion violations / security holes, no nitpicks, `"No issues found."` is a valid report.
+
+Don't add per-case lists of the skill's intentional design decisions. The quote-the-substring rule and the boot-blocker filter already keep the reviewer off them, and such lists go stale faster than the skill does.
 
 ## Requirements for the test set
 
@@ -107,15 +98,22 @@ Coverage rules. Use these to regenerate the suite when the skill changes.
 
 5. **Each prompt must be self-contained.** The AI should never need to ask follow-up questions. Phrase the prompt as a complete spec: project name, purpose, every choice listed explicitly.
 
-6. **Each test case must run end-to-end** on the host (`uv run manage.py …`), including `migrate`, `createsuperuser`, and the boot check (admin login). Postgres / Redis / Mailpit / MinIO services come from `docker compose up -d`. Add-on-specific checks (e.g. "enqueue and consume a Celery task") belong in the test case.
+6. **Each test case must run end-to-end** on the host (`uv run manage.py …`), including `migrate` and the boot check (admin login). Postgres / Redis / Mailpit / MinIO services come from `docker compose up -d --wait`. Add-on-specific checks (e.g. "enqueue and consume a Celery task") belong in the `## Boot check` block.
 
-7. **Check report is mandatory and produced by an independent reviewer.** After running, invoke `claude -p "..." --model claude-opus-4-7` from a fresh session against the generated project; do not let the same model that built the project grade its own output. Paste the reviewer's response into the report and add the human-curated bullets (what worked, what broke, fixes applied, suggested skill changes). The report drives skill improvements.
+7. **The reviewer is a separate phase and never sees the build.** `run-tests.sh` runs `## Review` as a fresh `claude -p` from the generated project dir, read-only tools, no skill access, no build context — so file and content assertions live there and the build agent can't game them. Never let the model that built the project grade its own output.
 
 8. **Keep the suite small.** Aim for ~6–10 test cases total. Beyond that, maintenance cost outweighs coverage value. Drop a case before adding a redundant one.
 
 ## Running a test case
 
-The harness is the AI itself. Open a fresh working directory, paste the prompt, let `/seedkit` run end-to-end, and append the check report. No automated runner — the value is in seeing whether the skill produces a working project unattended, not in shell-level assertions.
+`train/run-tests.sh` is the runner. From inside `seedkit/train/`:
+
+```sh
+./run-tests.sh              # every case
+./run-tests.sh 02 07        # specific cases
+```
+
+Each case runs in two isolated phases — build, then review — streaming into one log per run under `seedkit-examples/logs/`. Generated projects land in `seedkit-examples/`. `train/review-logs.sh` then walks those logs and patches the skill from what they surfaced.
 
 ## When to regenerate
 

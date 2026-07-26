@@ -157,7 +157,7 @@ if [ "$#" -gt 0 ]; then exec "$@"; fi
 mkdir -p /data
 litestream restore -config /etc/litestream.yml -if-db-not-exists -if-replica-exists /data/site.sqlite3
 python manage.py migrate --noinput
-python manage.py createcachetable --database cache
+python manage.py createcachetable --database cache   # only when cache backend = sqlite; delete this line otherwise — `--database` validates against configured aliases and exits 2
 exec litestream replicate -config /etc/litestream.yml -exec "gunicorn config.wsgi --bind 0.0.0.0:8000 --max-requests 1000 --max-requests-jitter 100 --access-logfile -"
 ```
 

@@ -199,12 +199,12 @@ entries before the first commit.
 
 ```sh
 uv run manage.py migrate
-uv run manage.py createsuperuser
-uv run manage.py runserver
 ```
 
-For docker-compose, see `references/docker.md`. Confirm `/admin/` login
-works before continuing.
+Then the backgrounded `runserver --noreload` + curl poll from SKILL.md §4.
+`createsuperuser` and the browser login belong to SKILL.md §7 — they need a
+stable task-runner name and a real browser. For docker-compose, see
+`references/docker.md`.
 
 ## Scripts (optional)
 
