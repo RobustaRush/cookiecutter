@@ -195,6 +195,14 @@ extract_section() {
 # Exits with the underlying CLI's real exit code (not jq's — via
 # PIPESTATUS), so callers can tell a genuine failure from a clean run.
 cli_dispatch() {
+    # The CLI reports session/usage limits, auth failures, and network
+    # errors on stderr, which the stdout jq|tee pipeline never sees.
+    # Without this the log of a limited-out run is empty and reads like a
+    # build that simply did nothing. Appended directly, not teed through a
+    # process substitution: run_watched kills the process group as soon as
+    # the command exits, and callers read the log on the next line.
+    [[ -n "${CASE_LOG:-}" ]] && exec 2>> "$CASE_LOG"
+
     case "$CASE_CLI" in
         claude)
             # CLAUDE_CODE_DISABLE_AUTO_MEMORY — harness runs must be
@@ -299,6 +307,31 @@ upsert_result() {
     { printf '%s\n' "$RESULTS_HEADER"; sort -t$'\t' -k1,1 -k2,2 "$body"; } > "$tmp"
     mv "$tmp" "$tsv"
     rm -f "$body"
+}
+
+# assert_agent_ran <log> <label>
+#
+# A generation phase always makes tool calls — it writes files. Zero
+# markers means the CLI never got a turn: a session/usage limit, an auth
+# failure, a network error. That is an infrastructure failure, not a build
+# result, and every remaining case will hit the same wall within seconds.
+# Abort the sweep instead of recording it, so a limit hit at case 03 can't
+# fill the results table with six rows of nothing that read as failed
+# builds.
+assert_agent_ran() {
+    local log=$1 label=$2
+    [[ $(count_tool_calls "$log") -gt 0 ]] && return 0
+    {
+        echo
+        echo "════════ ABORTED ════════"
+        echo "$label made no tool calls — the agent never ran."
+        echo "No result row written; remaining cases skipped."
+    } >> "$log"
+    printf '\n  ABORTED: %s made no tool calls — the agent never ran.\n' "$label" >&2
+    printf '  Usually a session/usage limit. The CLI said:\n\n' >&2
+    tail -n 15 "$log" | sed 's/^/    /' >&2
+    printf '\n  No result row written. Re-run this case once the limit resets.\n\n' >&2
+    exit 3
 }
 
 # scorecard_value <log> — the `SCORE n/8` the scorecard phase emitted,

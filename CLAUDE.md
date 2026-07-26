@@ -47,6 +47,8 @@ The reviewer prompt at the bottom of every testcase is identical and short: repo
 
 Each case runs in its own session (portable `setsid_exec` Python shim, `train/agents.sh`) so the post-case sweep `kill -- -$pgid` reaches every descendant — orphaned celery workers, gunicorn, `runserver` autoreloader. A watchdog terminates the group if a phase overruns — `TIMEOUT_PER_PHASE` in `run-tests.sh`, `TIMEOUT_PER_CASE` in `run-baseline.sh`, both 7200. Cleanup is harness-side; the skill and testcase prompts must not invoke `pkill -f` (it matches the parent agent-CLI process).
 
+`cli_dispatch` appends the agent CLI's stderr to the case log — session/usage limits, auth failures, and network errors are reported there, and the stdout `jq | tee` pipeline never sees them. After the generation phase both scripts call `assert_agent_ran()`: zero `[tool:…]` markers means the CLI never got a turn, so the harness writes no result row and aborts the sweep with exit 3. A generation phase that reaches a project always calls tools, and whatever stopped one case stops every later one within seconds — recording those as `boot_rc 1` would fill the table with infrastructure failures dressed as failed builds.
+
 Generated projects land in `../seedkit-examples/` (the sibling submodule). Per-run logs land in `../seedkit-examples/logs/` (gitignored inside that repo). The harness prepends each testcase's `## Prompt` block to the generated project's `README.md` and writes a top-level `seedkit-examples/README.md` index after every run.
 
 ## Baseline contract

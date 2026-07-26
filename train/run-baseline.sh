@@ -239,14 +239,16 @@ for tc in "${FILES[@]}"; do
 
     popd >/dev/null
 
+    build_duration=$(( $(date +%s) - start ))
+    tool_calls_build=$(count_tool_calls "$log")
+    assert_agent_ran "$log" "baseline $name"
+
     # ── Scorecard — the arm-neutral rubric both arms are graded on ────
     {
         echo
         echo "════════ SCORECARD (claude / $SCORECARD_MODEL) ════════"
         echo
     } >> "$log"
-    build_duration=$(( $(date +%s) - start ))
-    tool_calls_build=$(count_tool_calls "$log")
     pushd "$case_dir" >/dev/null
     PROMPT="$(cat "$SCORECARD")" CASE_LOG="$log" CASE_MODEL="$SCORECARD_MODEL" \
     CASE_TOOLS="Read,Grep,Glob,Bash(ls:*),Bash(cat:*),Bash(rg:*),Bash(find:*)" CASE_CLI="claude" \

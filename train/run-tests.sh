@@ -312,6 +312,7 @@ for tc in "${FILES[@]}"; do
     # slower for doing more verification, not for working harder.
     build_duration=$(( $(date +%s) - start ))
     tool_calls_build=$(count_tool_calls "$log")
+    assert_agent_ran "$log" "build $name"
 
     # ── Phase 2: review ──────────────────────────────────────────────
     review_section=$(extract_section "$tc" "Review")
