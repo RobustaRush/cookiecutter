@@ -12,7 +12,9 @@ An agent skill to start new Django projects or extend existing ones. One sentenc
 
 [![View Outputs](https://img.shields.io/badge/View%20Outputs-00C853?style=for-the-badge)](https://github.com/viewflow/seedkit-examples)
 
-LLMs write Django from memory. That memory is a year or two old. Think deprecated auth settings and last version's Stripe webhooks. Or database ports open to the local network. seedkit keeps that knowledge in [maintained reference files](https://github.com/viewflow/seedkit/tree/main/skills/seedkit/references) instead. We build the files from package docs. We test them end-to-end and fix every failure. The model types.
+LLMs write Django from memory. That memory is a year or two old. Think deprecated auth settings and last version's Stripe webhooks. Or database ports open to the local network.
+
+seedkit keeps that knowledge in [maintained reference files](https://github.com/viewflow/seedkit/tree/main/skills/seedkit/references) instead: we build them from package docs, test them end-to-end, and fix every failure back into the file. The model types. That's why scaffolding runs clean on mid-tier Sonnet — your frontier-model hours go to the code only you can write.
 
 What you get:
 
@@ -21,7 +23,7 @@ What you get:
 - **Works on the project you already have:** Generators only start from zero. `/seedkit add [feature]` wires a new package into a live repo: deps, settings, `.env` example, the CI step.
 - **Your exact stack, not a preset:** A cookiecutter hands you its choices, and you spend day one deleting. Here you pick: Celery or RQ, allauth or magic links, VPS or Fly. You get only the code for the options you picked.
 - **Plain Django, no lock-in:** The output is a normal Django project you own. No wrapper library, no runtime dependency on seedkit, nothing extra to upgrade later.
-- **Skip the generate–boot–fix grind:** The references distill 100+ hours of those cycles, so scaffolding runs clean on mid-tier Sonnet. Your frontier-model hours go to the code only you can write.
+- **Skip the generate–boot–fix grind:** The references distill 100+ hours of those cycles.
 
 <img src=".github/demo.gif" alt="One prompt in, a running Django project out" width="700">
 
