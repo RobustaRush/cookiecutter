@@ -80,7 +80,7 @@ mkdir -p "$LOGS"
 # reaching it at all. Split per CLI: comparing a claude skill run against a
 # codex baseline measures the CLI, not the skill.
 #
-# upsert_result() REPLACES the row for this (case, arm). Re-running a case
+# upsert_result() REPLACES the row for this (case, arm, model). Re-running a case
 # after a skill fix must update its row, not append a second one next to
 # the stale result. Committed to the examples repo, so it stays sorted.
 RESULTS_TSV="$WORKSPACE/results-$BUILD_CLI.tsv"
@@ -312,7 +312,8 @@ for tc in "${FILES[@]}"; do
             printf -- '- Run gunicorn from the built prod image — never `runserver` against production settings.\n'
             printf -- '- Always tear down the smoke containers, network, and volumes at the end (even on failure) — orphaned `postgres:17` containers from a previous run will collide on the next.\n\n'
         fi
-        printf 'At the end, summarise: What worked out of the box / What broke / Fixes applied / Suggested skill changes.\n'
+        printf 'At the end, summarise: What worked out of the box / What broke / Fixes applied / Suggested skill changes.\n\n'
+        fix_report_block
     } | run_phase "BUILD" "$BUILD_CLI" "$MODEL" "$WORKSPACE" "$log" ""
     build_rc=$?
 
@@ -339,6 +340,8 @@ for tc in "${FILES[@]}"; do
     # slower for doing more verification, not for working harder.
     build_duration=$(( $(date +%s) - start ))
     tool_calls_build=$(count_tool_calls "$log")
+    fixes_build=$(count_fixes "$log")
+    rewrites_build=$(count_rewrites "$log")
     assert_agent_ran "$log" "build $name"
     assert_phase_ok "$build_rc" "$log" "build $name"
 
@@ -370,12 +373,14 @@ for tc in "${FILES[@]}"; do
     {
         echo
         echo "════════ DONE ════════"
-        printf '[build_exit: %s, review_exit: %s, score: %s, build: %ss, total: %ss, tool_calls: %s]\n' \
-            "$build_rc" "$review_rc" "$score" "$build_duration" "$duration" "$tool_calls_build"
+        printf '[build_exit: %s, review_exit: %s, score: %s, build: %ss, total: %ss, tool_calls: %s, fixes: %s, rewrites: %s]\n' \
+            "$build_rc" "$review_rc" "$score" "$build_duration" "$duration" \
+            "$tool_calls_build" "$fixes_build" "$rewrites_build"
     } >> "$log"
 
-    upsert_result "$RESULTS_TSV" "$name" skill "$(printf '%s\tskill\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
-        "$name" "$BUILD_CLI" "$MODEL" "$build_rc" "$score" "$build_duration" "$tool_calls_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
+    upsert_result "$RESULTS_TSV" "$name" skill "$MODEL" "$(printf '%s\tskill\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
+        "$name" "$BUILD_CLI" "$MODEL" "$score" "$build_duration" "$tool_calls_build" \
+        "$fixes_build" "$rewrites_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
 done
 
 # Top-level README for the examples collection.

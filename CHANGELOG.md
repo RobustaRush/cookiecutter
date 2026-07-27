@@ -2,6 +2,13 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
+## 26.31.1 — 2026-07-27
+
+### Testcases and harness
+- Baselines are per-model: output moves to `seedkit-examples/baselines/<model>/<case>/` (`model_slug()` in `agents.sh` — `claude-sonnet-5` → `sonnet`), and `upsert_result()` keys rows on `(case, arm, model)`. An opus or fable control run now lands beside the sonnet one instead of overwriting it.
+- New build-phase metrics, both arms: `fixes` (the `FIXES n` tail `fix_report_block()` asks every generation agent for) and `rewrites` (writes to a path already written this run, counted from new `[file:…]` markers). The scorecard reads 8/8 in every scored case and has never failed a check against skill output, so it separates the arms and then stops moving; a fix is a reference file that was wrong, which is what iterating on the skill needs to see.
+- Dropped the exit-code column from `results-<cli>.tsv` — `assert_phase_ok()` aborts the sweep on any non-zero phase, so a written row could only ever hold `0`.
+
 ## 26.30.7 — 2026-07-26
 
 ### Fixed

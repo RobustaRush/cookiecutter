@@ -2,7 +2,8 @@
 #
 # Generate the "no-skill" control arm for each testcase: a fresh agent
 # CLI with no /seedkit skill reachable, given the same ## Prompt and the
-# same ## Boot check as the skill arm, into seedkit-examples/baselines/.
+# same ## Boot check as the skill arm, into
+# seedkit-examples/baselines/<model>/.
 #
 # For the comparison to mean anything the two arms must differ in ONE
 # variable — whether the skill is loaded. So this script mirrors
@@ -12,8 +13,11 @@
 # never told to produce; both arms are graded on train/scorecard.md
 # instead, which is arm-neutral and emits `SCORE n/8`.
 #
-# Output lands in $WORKSPACE/baselines/ so the control arm publishes with
-# the skill arm. That path sits under the .claude/skills/seedkit symlink
+# Output lands in $WORKSPACE/baselines/<model>/ so the control arm
+# publishes with the skill arm, one subtree per model — sonnet, opus, and
+# fable controls sit side by side instead of overwriting each other, and
+# the results TSV keys rows on the model for the same reason. That path
+# sits under the .claude/skills/seedkit symlink
 # run-tests.sh creates, and a control group that can see the treatment is
 # not a control group — so unlink_skill() removes the project-scoped
 # symlinks for the duration of the run and assert_skill_unreachable()
@@ -24,9 +28,9 @@
 # Manual invocation — run once, refresh by hand when the testcases
 # change or the model changes. Run from inside seedkit/train/.
 #
-#   ./run-baseline.sh                       # all testcases (claude)
+#   ./run-baseline.sh                       # all testcases → baselines/sonnet/
 #   ./run-baseline.sh 02 07                 # specific ones (matched by NN prefix)
-#   MODEL=claude-opus-5 ./run-baseline.sh
+#   MODEL=claude-opus-5 ./run-baseline.sh   # → baselines/opus/
 #   BASELINE_CLI=codex ./run-baseline.sh    # or agy
 #
 # Requires: jq, python3, and whichever CLI $BASELINE_CLI names.
@@ -43,7 +47,10 @@ WORKSPACE="$(cd "$WORKSPACE" && pwd)"
 # Inside the examples repo so the control arm and its scorecards publish
 # alongside the skill arm. Safe only because unlink_skill() below removes
 # the skill symlink for the run — see the header.
-BASELINE_ROOT="${BASELINE_ROOT:-$WORKSPACE/baselines}"
+# Set after MODEL resolves — the root is per-model (baselines/sonnet/,
+# baselines/opus/) so a second model's control arm lands beside the first
+# instead of overwriting it.
+BASELINE_ROOT="${BASELINE_ROOT:-}"
 # Under $WORKSPACE/logs/, which the examples repo gitignores wholesale and
 # which review-logs.sh globs NON-recursively — so baseline logs are both
 # unpublished and invisible to the log reviewer.
@@ -57,6 +64,7 @@ case "$BASELINE_CLI" in
     *) echo "BASELINE_CLI must be one of: claude codex agy (got: $BASELINE_CLI)" >&2; exit 1 ;;
 esac
 MODEL="${MODEL:-$DEFAULT_MODEL}"
+BASELINE_ROOT="${BASELINE_ROOT:-$WORKSPACE/baselines/$(model_slug "$MODEL")}"
 SCORECARD_MODEL="${SCORECARD_MODEL:-claude-opus-5}"
 # Match run-tests.sh's per-phase ceiling — a control arm on half the
 # budget produces truncated projects that read as "the unaided agent did
@@ -218,7 +226,8 @@ for tc in "${FILES[@]}"; do
             printf 'After scaffolding completes, run these runtime smoke checks from the project root (the `cd <project>` line has been removed — you are already there). Auto-fix any failure (the goal is a project that boots and the smoke pipeline returns clean):\n\n'
             printf '%s\n\n' "$boot_body"
         fi
-        printf 'At the end, summarise: What worked out of the box / What broke / Fixes applied.\n'
+        printf 'At the end, summarise: What worked out of the box / What broke / Fixes applied.\n\n'
+        fix_report_block
     )"
 
     {
@@ -242,6 +251,8 @@ for tc in "${FILES[@]}"; do
 
     build_duration=$(( $(date +%s) - start ))
     tool_calls_build=$(count_tool_calls "$log")
+    fixes_build=$(count_fixes "$log")
+    rewrites_build=$(count_rewrites "$log")
     assert_agent_ran "$log" "baseline $name"
     assert_phase_ok "$rc" "$log" "baseline $name"
 
@@ -263,17 +274,19 @@ for tc in "${FILES[@]}"; do
     {
         echo
         echo "════════ DONE ════════"
-        printf '[exit: %s, score: %s, build: %ss, total: %ss, tool_calls: %s]\n' \
-            "$rc" "$score" "$build_duration" "$duration" "$tool_calls_build"
+        printf '[exit: %s, score: %s, build: %ss, total: %ss, tool_calls: %s, fixes: %s, rewrites: %s]\n' \
+            "$rc" "$score" "$build_duration" "$duration" \
+            "$tool_calls_build" "$fixes_build" "$rewrites_build"
     } >> "$log"
 
-    upsert_result "$RESULTS_TSV" "$name" baseline "$(printf '%s\tbaseline\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
-        "$name" "$BASELINE_CLI" "$MODEL" "$rc" "$score" "$build_duration" "$tool_calls_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
+    upsert_result "$RESULTS_TSV" "$name" baseline "$MODEL" "$(printf '%s\tbaseline\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s' \
+        "$name" "$BASELINE_CLI" "$MODEL" "$score" "$build_duration" "$tool_calls_build" \
+        "$fixes_build" "$rewrites_build" "$(date -u +%Y-%m-%dT%H:%MZ)")"
 
-    printf '    done: exit=%s score=%s build=%ss tools=%s\n' \
-        "$rc" "$score" "$build_duration" "$tool_calls_build"
-    RESULTS+=("$(printf 'exit=%-3s score=%-5s build=%-6s tools=%-4s %s' \
-        "$rc" "$score" "${build_duration}s" "$tool_calls_build" "$name")")
+    printf '    done: score=%s build=%ss tools=%s fixes=%s rewrites=%s\n' \
+        "$score" "$build_duration" "$tool_calls_build" "$fixes_build" "$rewrites_build"
+    RESULTS+=("$(printf 'score=%-5s build=%-6s tools=%-4s fixes=%-4s rewrites=%-4s %s' \
+        "$score" "${build_duration}s" "$tool_calls_build" "$fixes_build" "$rewrites_build" "$name")")
 done
 
 echo

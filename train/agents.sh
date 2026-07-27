@@ -229,6 +229,17 @@ cli_dispatch() {
             | jq --unbuffered -j -r '
                 if .event.delta.type? == "text_delta" then .event.delta.text
                 elif .event.content_block?.type? == "tool_use" then "\n[tool:\(.event.content_block.name)]\n"
+                # `stream_event` lines carry the tool NAME but not its input —
+                # the arguments arrive later as input_json_deltas. The complete
+                # `assistant` message repeats each tool_use with input filled
+                # in, which is the only place the edited path is readable.
+                # Distinct prefix so count_tool_calls (^\[tool:) is unaffected.
+                elif .type? == "assistant" then
+                    ([.message.content[]?
+                      | select(.type == "tool_use")
+                      | select(.name == "Edit" or .name == "Write" or .name == "NotebookEdit")
+                      | "\n[file:\(.name)] \(.input.file_path // .input.notebook_path // "?")\n"]
+                     | join(""))
                 else empty end' \
             | _cli_sink
             exit "${PIPESTATUS[0]}"
@@ -247,7 +258,7 @@ cli_dispatch() {
             | jq --unbuffered -j -r '
                 if .type == "item.completed" and .item.type == "agent_message" then .item.text + "\n"
                 elif .type == "item.completed" and .item.type == "command_execution" then "\n[tool:shell] \(.item.command)\n[result:exit \(.item.exit_code)] \(.item.aggregated_output // "")\n"
-                elif .type == "item.completed" and .item.type == "file_change" then "\n[tool:file_change] \(.item.path // (.item | tostring))\n"
+                elif .type == "item.completed" and .item.type == "file_change" then "\n[tool:file_change] \(.item.path // (.item | tostring))\n[file:file_change] \(.item.path // "?")\n"
                 elif .type == "turn.failed" then "\n[error] \(.error.message // (.error | tostring))\n"
                 else empty end
               ' \
@@ -288,23 +299,96 @@ count_tool_calls() {
     printf '%s' "${n:-0}"
 }
 
-# upsert_result <tsv> <case> <arm> <row>
+# count_fixes <log> — the `FIXES n` the generation agent reports.
 #
-# Replaces the row for this (case, arm) rather than appending one. Re-running
-# a case after a skill fix must UPDATE its row — appending would leave the
-# stale row next to the new one and every comparison would read both. Keeps
-# the body sorted so the committed file diffs cleanly.
-RESULTS_HEADER=$'case\tarm\tcli\tmodel\tcli_rc\tscore\tbuild_s\ttool_calls\trun_at'
+# The primary iteration metric. Every fix is a reference file that was wrong:
+# a skill whose snippets are correct means the agent never had to repair its
+# own output. Unlike the scorecard — which the skill passes by construction,
+# so it cannot move — this has real spread and it moves when a reference
+# regresses.
+#
+# head -1, not tail -1: generation is the FIRST phase in the log, and review
+# and scorecard append to the same file below it.
+count_fixes() {
+    local n
+    n=$(grep -oE '^FIXES [0-9]+' "$1" 2>/dev/null | head -1 | awk '{print $2}') || true
+    printf '%s' "${n:--}"
+}
+
+# count_rewrites <log> — writes to a path the agent had already written
+# earlier in the same run.
+#
+# The witness for count_fixes, which is self-reported by the agent under test
+# and undercounts: agents file repairs they consider routine under "Notes"
+# instead of "What broke". This one is mechanical — first touch of a path is
+# authoring, every touch after it is rework.
+#
+# agy has no structured event stream, so this reads 0 for that CLI, the same
+# way count_tool_calls does.
+count_rewrites() {
+    grep -oE '^\[file:[A-Za-z_]+\] .+' "$1" 2>/dev/null \
+        | sed -E 's/^\[file:[A-Za-z_]+\] //' \
+        | awk '{ if (seen[$0]++) n++ } END { printf "%d", n + 0 }'
+}
+
+# model_slug <model-id> — the directory name a model's baselines live under.
+#
+#   claude-sonnet-5 → sonnet     gemini-3.5-flash → gemini-3.5-flash
+#
+# Baselines are per-model (baselines/sonnet/, baselines/opus/) so a second
+# model's control arm lands beside the first instead of overwriting it. An
+# empty model means the CLI picks its own default and we can't name it.
+model_slug() {
+    local m=${1:-}
+    [[ -z "$m" ]] && { printf 'default'; return; }
+    m=${m#claude-}          # claude-sonnet-5 → sonnet-5
+    m=$(printf '%s' "$m" | sed -E 's/-[0-9]+(\.[0-9]+)?$//')
+    printf '%s' "$m"
+}
+
+# fix_report_block — the structured tail both generation prompts end with.
+#
+# Shared, not duplicated per script, because count_fixes reads it out of both
+# arms' logs and the arms must differ in one variable only. Free-prose
+# summaries don't survive parsing: agents route repairs they consider routine
+# into "Notes" and report zero, and several control runs emitted no summary
+# at all. Hence the fixed grammar and the explicit definition of a fix.
+fix_report_block() {
+    cat <<'BLOCK'
+Finish your reply with this block and nothing after it:
+
+FIXES <n>
+FIX <one line: what you changed and why>    (one per fix; omit when n is 0)
+
+A fix is any edit to a file you had already written earlier in this run, and
+any departure from a snippet you were given. Count repairs you would call
+routine — a wrong import, a version bump, a path correction all count.
+BLOCK
+}
+
+# upsert_result <tsv> <case> <arm> <model> <row>
+#
+# Replaces the row for this (case, arm, model) rather than appending one.
+# Re-running a case after a skill fix must UPDATE its row — appending would
+# leave the stale row next to the new one and every comparison would read
+# both. Model is part of the key because baselines are now per-model: without
+# it an opus control run silently overwrites the sonnet one it exists to be
+# compared against. Keeps the body sorted on the same three fields so the
+# committed file diffs cleanly and a case's models group together.
+#
+# No cli_rc column: assert_phase_ok aborts the sweep on any non-zero phase
+# exit, so a written row could only ever carry 0.
+RESULTS_HEADER=$'case\tarm\tcli\tmodel\tscore\tbuild_s\ttool_calls\tfixes\trewrites\trun_at'
 upsert_result() {
-    local tsv=$1 case_name=$2 arm=$3 row=$4 tmp body
+    local tsv=$1 case_name=$2 arm=$3 model=$4 row=$5 tmp body
     tmp="$(mktemp)"
     body="$(mktemp)"
     if [[ -f "$tsv" ]]; then
-        awk -F'\t' -v c="$case_name" -v a="$arm" \
-            'NR > 1 && !($1 == c && $2 == a)' "$tsv" > "$body"
+        awk -F'\t' -v c="$case_name" -v a="$arm" -v m="$model" \
+            'NR > 1 && !($1 == c && $2 == a && $4 == m)' "$tsv" > "$body"
     fi
     printf '%s\n' "$row" >> "$body"
-    { printf '%s\n' "$RESULTS_HEADER"; sort -t$'\t' -k1,1 -k2,2 "$body"; } > "$tmp"
+    { printf '%s\n' "$RESULTS_HEADER"; sort -t$'\t' -k1,1 -k2,2 -k4,4 "$body"; } > "$tmp"
     mv "$tmp" "$tsv"
     rm -f "$body"
 }
