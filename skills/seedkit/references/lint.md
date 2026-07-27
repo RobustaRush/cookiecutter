@@ -52,9 +52,11 @@ quote-style = "double"
 After install, normalize the generated codebase once (`startproject` writes single quotes):
 
 ```sh
-uv run ruff format .
 uv run ruff check . --fix
+uv run ruff format .
 ```
+
+`--fix` runs first: deleting an unused import leaves the blank line that followed it, and only the formatter clears that.
 
 ## Task runner
 
