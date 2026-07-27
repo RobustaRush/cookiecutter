@@ -137,7 +137,8 @@ assert_skill_unreachable "$BASELINE_ROOT"
 # Both arms share one file per CLI — the `arm` column separates them, so
 # a comparison is one `column -t` away. Split per CLI because comparing a
 # claude skill run against a codex baseline measures the CLI, not the skill.
-RESULTS_TSV="$WORKSPACE/results-$BASELINE_CLI.tsv"
+# Overridable for a variance pass — see the note in run-tests.sh.
+RESULTS_TSV="${RESULTS_TSV:-$WORKSPACE/results-$BASELINE_CLI.tsv}"
 
 # Resolve the testcase files to run.
 shopt -s nullglob

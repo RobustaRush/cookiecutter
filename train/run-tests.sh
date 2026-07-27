@@ -83,7 +83,11 @@ mkdir -p "$LOGS"
 # upsert_result() REPLACES the row for this (case, arm, model). Re-running a case
 # after a skill fix must update its row, not append a second one next to
 # the stale result. Committed to the examples repo, so it stays sorted.
-RESULTS_TSV="$WORKSPACE/results-$BUILD_CLI.tsv"
+#
+# Overridable so a variance pass can send its repeats to a scratch file:
+# the key holds no run index, so N repeats of one case would otherwise
+# overwrite each other and leave only the last.
+RESULTS_TSV="${RESULTS_TSV:-$WORKSPACE/results-$BUILD_CLI.tsv}"
 
 # Resolve the testcase files to run.
 shopt -s nullglob
