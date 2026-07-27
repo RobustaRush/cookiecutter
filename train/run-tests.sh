@@ -342,6 +342,7 @@ for tc in "${FILES[@]}"; do
     tool_calls_build=$(count_tool_calls "$log")
     fixes_build=$(count_fixes "$log")
     rewrites_build=$(count_rewrites "$log")
+    drop_stray_git_hooks "$WORKSPACE"
     assert_agent_ran "$log" "build $name"
     assert_phase_ok "$build_rc" "$log" "build $name"
 
