@@ -8,11 +8,11 @@ document.documentElement.className =
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Django Seedkit — AI Agent Skill for Django Project Setup</title>
-<meta name="description" content="An AI agent skill that writes Django projects: authentication, payments, background jobs, deploy. A cookiecutter alternative for Claude Code, Cursor, and other coding agents.">
+<meta name="description" content="Current Django knowledge and best practices for coding agents. Seedkit writes Django projects — authentication, payments, background jobs, deploy — and is a cookiecutter alternative for Claude Code and Cursor.">
 <link rel="canonical" href="https://django-seedkit.viewflow.io/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Django Seedkit — AI Agent Skill for Django Project Setup">
-<meta property="og:description" content="An AI agent skill that writes Django projects: authentication, payments, background jobs, deploy. A cookiecutter alternative for Claude Code, Cursor, and other coding agents.">
+<meta property="og:description" content="Current Django knowledge and best practices for coding agents. Seedkit writes Django projects — authentication, payments, background jobs, deploy — and is a cookiecutter alternative for Claude Code and Cursor.">
 <meta property="og:url" content="https://django-seedkit.viewflow.io/">
 <meta property="og:image" content="https://raw.githubusercontent.com/viewflow/seedkit/main/.github/demo.gif">
 <meta name="twitter:card" content="summary_large_image">
@@ -25,7 +25,7 @@ document.documentElement.className =
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "Django Seedkit",
-  "description": "An AI agent skill that writes Django projects — authentication, payments, REST APIs, background jobs, deploy — and adds new features to an existing Django repository.",
+  "description": "Current Django knowledge and best practices for coding agents. An AI agent skill that writes Django projects — authentication, payments, REST APIs, background jobs, deploy — and adds new features to an existing Django repository.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
   "softwareVersion": "26.31.2",
@@ -217,6 +217,7 @@ document.documentElement.className =
     font: 500 0.75rem/1 var(--mono);
     letter-spacing: 0.14em;
     text-transform: uppercase;
+    line-height: 1.5;
     color: var(--md-sys-color-primary);
     margin: 0 0 1rem;
   }
@@ -379,7 +380,7 @@ document.documentElement.className =
 </header>
 
 <section class="hero">
-  <p class="kicker">Agent skill for Django</p>
+  <p class="kicker">Current Django knowledge and best practices for coding agents</p>
   <h1>Scaffold a Django project<br>the way you need it.</h1>
   <p class="lede">
     Seedkit is a skill for Claude Code, Cursor, and other coding agents.
@@ -401,12 +402,13 @@ document.documentElement.className =
 <section aria-label="Measured result">
   <div class="note">
     <p class="kicker">Measured result</p>
-    <p class="claim">The skill makes Sonnet score higher than Opus and Fable without it.</p>
+    <p class="claim">The generated projects pass more production checks.</p>
     <p>
       A second model tested four generated projects. Each project went through the
-      same eight security and configuration checks. Sonnet with the skill scored 32
-      of 32. Opus with no skill scored 29, Fable with no skill 24, and Sonnet with
-      no skill 23.
+      same eight security and configuration checks. With the skill, each project
+      scored 8 of 8 — 32 of 32 in total. The same prompts with no skill scored 29
+      with Opus, 24 with Fable, and 23 with Sonnet. So Sonnet with the skill scored
+      higher than Opus without it.
     </p>
     <p class="fine">
       One run for each project, four projects, Claude models only. The numbers show
@@ -432,7 +434,7 @@ document.documentElement.className =
       <p><strong>A
       <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference file</a>
       cuts the package documentation down to what the model does not know.</strong>
-      Today's setting names, today's package names. One file for each subject:
+      Today's setting names, today's package names. One file for each topic:
       authentication, payments, storage, deploy.</p>
     </div>
     <div class="step">
@@ -499,9 +501,9 @@ document.documentElement.className =
 
 <section>
   <p class="kicker">What it adds</p>
-  <h2>One reference file for each subject</h2>
+  <h2>One reference file for each topic</h2>
   <p class="lede">
-    Each file carries the packages, the settings, and the templates for one subject.
+    Each file carries the packages, the settings, and the templates for one topic.
     The set goes from an empty directory to a deploy. It includes the small items,
     such as <code>robots.txt</code> and the sitemap. Seedkit writes only the files
     that your answers select.
