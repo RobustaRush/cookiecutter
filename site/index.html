@@ -61,7 +61,7 @@ document.documentElement.className =
       "name": "Does my project depend on Seedkit when it runs?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. Seedkit writes a normal Django project one time. There is no wrapper library, no dependency at run time, and nothing more to upgrade later."
+        "text": "No. Seedkit writes a normal Django project one time. It adds no wrapper library, no dependency at run time, and nothing more to upgrade later."
       }
     },
     {
@@ -69,7 +69,7 @@ document.documentElement.className =
       "name": "Which model must I use?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 32 of 32, so a mid-tier model is sufficient. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the GitHub issue tracker."
+        "text": "Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 32 of 32, so a mid-tier model is enough. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the GitHub issue tracker."
       }
     }
   ]
@@ -403,9 +403,10 @@ document.documentElement.className =
     <p class="kicker">Measured result</p>
     <p class="claim">The skill makes Sonnet score higher than Opus and Fable without it.</p>
     <p>
-      A second model tested four generated projects against the same eight security
-      and configuration checks. Sonnet with the skill scored 32 of 32. Opus with no
-      skill scored 29, Fable with no skill 24, and Sonnet with no skill 23.
+      A second model tested four generated projects. Each project went through the
+      same eight security and configuration checks. Sonnet with the skill scored 32
+      of 32. Opus with no skill scored 29, Fable with no skill 24, and Sonnet with
+      no skill 23.
     </p>
     <p class="fine">
       One run for each project, four projects, Claude models only. The numbers show
@@ -419,13 +420,13 @@ document.documentElement.className =
 
 <section>
   <p class="kicker">Why a skill and not a template</p>
-  <h2>A model writes Django from memory. That memory is one or two years old.</h2>
+  <h2>The model's Django knowledge is one or two years old</h2>
   <p class="lede">
-    Old memory produces a deprecated authentication setting, or last year's Stripe
-    webhook. It can also open a database port to the local network.
-    Seedkit keeps the current knowledge in
-    <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference files</a>
-    instead. The model only types.
+    So it writes an authentication setting that Django deprecated, or last year's
+    Stripe webhook. Or it opens the database port to the local network. Seedkit keeps
+    today's answer in a
+    <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference file</a>,
+    and the model copies from there.
   </p>
   <div class="steps">
     <div class="step">
@@ -434,13 +435,13 @@ document.documentElement.className =
     </div>
     <div class="step">
       <p><strong>Nine scenarios test the files from end to end.</strong>
-      Each scenario generates a project, starts it, runs a smoke test, and then a
-      second model examines the result.</p>
+      Each scenario generates a project, starts it, and runs a smoke test.
+      A second model then examines the result.</p>
     </div>
     <div class="step">
-      <p><strong>Each failure goes back into the file.</strong>
-      The next run does not repeat it. The reference files hold more than 100 hours
-      of this loop, so you do not repeat it either.</p>
+      <p><strong>Every failure goes into the file.</strong>
+      The next run does not hit it again, and the files now hold more than 100 hours
+      of this work. You skip it.</p>
     </div>
   </div>
 </section>
@@ -452,8 +453,8 @@ document.documentElement.className =
          alt="An agent reads the prompt, asks a few questions, and writes a Django project that starts." loading="lazy">
     <figcaption>
       The first prompt above produced
-      <a href="https://github.com/viewflow/seedkit-examples/tree/main/07-vps-sqlite-saas" target="_blank" rel="noopener">07-vps-sqlite-saas</a>:
-      a Docker and Caddy deploy, Sentry, Litestream backups, and CI.
+      <a href="https://github.com/viewflow/seedkit-examples/tree/main/07-vps-sqlite-saas" target="_blank" rel="noopener">07-vps-sqlite-saas</a>.
+      It has a Docker and Caddy deploy, Sentry, Litestream backups, and CI.
     </figcaption>
   </figure>
 </section>
@@ -475,7 +476,7 @@ document.documentElement.className =
     </div>
     <div class="card">
       <h3>The project is yours</h3>
-      <p>Seedkit writes a normal Django project one time. There is no wrapper library and no dependency at run time.</p>
+      <p>Seedkit writes a normal Django project one time. It adds no wrapper library, and your project has no dependency at run time.</p>
     </div>
     <div class="card">
       <h3>The version pins are current</h3>
@@ -637,11 +638,11 @@ claude plugin install seedkit@viewflow</pre>
   </div>
   <div class="faq-item">
     <h3>Does my project depend on Seedkit when it runs?</h3>
-    <p>No. Seedkit writes a normal Django project one time. There is no wrapper library, no dependency at run time, and nothing more to upgrade later.</p>
+    <p>No. Seedkit writes a normal Django project one time. It adds no wrapper library, no dependency at run time, and nothing more to upgrade later.</p>
   </div>
   <div class="faq-item">
     <h3>Which model must I use?</h3>
-    <p>Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 32 of 32, so a mid-tier model is sufficient. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the <a href="https://github.com/viewflow/seedkit/issues/new" target="_blank" rel="noopener">GitHub issue tracker</a>.</p>
+    <p>Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 32 of 32, so a mid-tier model is enough. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the <a href="https://github.com/viewflow/seedkit/issues/new" target="_blank" rel="noopener">GitHub issue tracker</a>.</p>
   </div>
 </section>
 
