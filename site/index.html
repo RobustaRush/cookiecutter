@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+<script>
+document.documentElement.className =
+  matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Django Seedkit — AI Agent Skill for Django Project Setup</title>
+<meta name="description" content="An AI agent skill that writes Django projects: authentication, payments, background jobs, deploy. A cookiecutter alternative for Claude Code, Cursor, and other coding agents.">
+<link rel="canonical" href="https://django-seedkit.viewflow.io/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Django Seedkit — AI Agent Skill for Django Project Setup">
+<meta property="og:description" content="An AI agent skill that writes Django projects: authentication, payments, background jobs, deploy. A cookiecutter alternative for Claude Code, Cursor, and other coding agents.">
+<meta property="og:url" content="https://django-seedkit.viewflow.io/">
+<meta property="og:image" content="https://raw.githubusercontent.com/viewflow/seedkit/main/.github/demo.gif">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="stylesheet" href="vendor/theme.css">
+<script type="module" src="vendor/material.min.js"></script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Django Seedkit",
+  "description": "An AI agent skill that writes Django projects — authentication, payments, REST APIs, background jobs, deploy — and adds new features to an existing Django repository.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Cross-platform",
+  "softwareVersion": "26.31.2",
+  "url": "https://django-seedkit.viewflow.io/",
+  "downloadUrl": "https://github.com/viewflow/seedkit",
+  "license": "https://github.com/viewflow/seedkit/blob/main/LICENSE",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Django Seedkit a cookiecutter alternative?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. A cookiecutter gives you one fixed set of packages, and you delete the parts that you do not need. Seedkit asks what you must build, then writes only the code for the options that you select."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it work with agents other than Claude Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Install it into Cursor, Codex, OpenCode, Gemini CLI, or any agent that the skills CLI supports. Use the command npx skills add viewflow/seedkit."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does my project depend on Seedkit when it runs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Seedkit writes a normal Django project one time. There is no wrapper library, no dependency at run time, and nothing more to upgrade later."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which model must I use?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 32 of 32, so a mid-tier model is sufficient. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the GitHub issue tracker."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  :root {
+    color-scheme: light dark;
+    --content-w: 940px;
+    --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  }
+  /* Django palette: #0C4B33 dark green, #44B78B light green */
+  html.light {
+    --md-sys-color-primary: #0C4B33;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-primary-container: #0c4b33;
+    --md-sys-color-on-primary-container: #dcf2e6;
+    --md-sys-color-secondary-container: #cfe8da;
+    --md-sys-color-on-secondary-container: #0c4b33;
+    --md-sys-color-inverse-primary: #6fd0a6;
+    --md-sys-color-background: #f2f9f5;
+    --md-sys-color-surface: #f2f9f5;
+    --md-sys-color-surface-container-lowest: #ffffff;
+    --md-sys-color-surface-container: #e6f2ea;
+    --md-sys-color-surface-container-high: #dcece2;
+    --md-sys-color-inverse-surface: #10231c;
+    --md-sys-color-inverse-on-surface: #e7f0ea;
+    --md-sys-color-on-background: #14201a;
+    --md-sys-color-on-surface: #14201a;
+    --md-sys-color-on-surface-variant: #44564d;
+    --md-sys-color-outline-variant: #c3dbcf;
+
+    --code-bg: var(--md-sys-color-inverse-surface);
+    --code-fg: var(--md-sys-color-inverse-on-surface);
+    --code-accent: var(--md-sys-color-inverse-primary);
+    --code-border: transparent;
+  }
+  html.dark {
+    --md-sys-color-primary: #44b78b;
+    --md-sys-color-on-primary: #04281b;
+    --md-sys-color-primary-container: #0c4b33;
+    --md-sys-color-on-primary-container: #cbeedd;
+    --md-sys-color-inverse-primary: #0c4b33;
+    --md-sys-color-background: #0b120f;
+    --md-sys-color-surface: #0b120f;
+    --md-sys-color-surface-container-lowest: #070d0b;
+    --md-sys-color-surface-container: #131c18;
+    --md-sys-color-surface-container-high: #1a241f;
+    --md-sys-color-on-background: #e6eee9;
+    --md-sys-color-on-surface: #e6eee9;
+    --md-sys-color-on-surface-variant: #b1c2b9;
+    --md-sys-color-outline-variant: #2b3a33;
+    --md-sys-color-outline: #4d6058;
+
+    --code-bg: var(--md-sys-color-surface-container-lowest);
+    --code-fg: var(--md-sys-color-on-surface);
+    --code-accent: var(--md-sys-color-primary);
+    --code-border: var(--md-sys-color-outline-variant);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+    background: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-background);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--md-sys-color-primary); }
+  section, header, footer {
+    max-width: var(--content-w);
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+  header.bar {
+    max-width: none;
+    padding: 0;
+    /* djangoproject.com header green, in both themes */
+    background: #0c4b33;
+    color: #ffffff;
+  }
+  .bar-inner {
+    max-width: var(--content-w);
+    margin: 0 auto;
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: #ffffff;
+    text-decoration: none;
+  }
+  .brand .leaf { font-size: 1.6rem; line-height: 1; }
+  .bar-actions { display: flex; align-items: center; gap: 0.75rem; }
+  .bar-link {
+    color: #a3e0c4;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .bar-link:hover { color: #ffffff; text-decoration: underline; }
+  .bar .icon-btn { color: #cfeade; }
+  .bar .icon-btn:hover { background: rgba(255, 255, 255, 0.14); color: #ffffff; }
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--md-sys-color-surface-container-high); }
+  .icon-btn svg { width: 1.25rem; height: 1.25rem; fill: currentColor; }
+  html.light .icon-btn .i-sun, html.dark .icon-btn .i-moon { display: none; }
+  .icon-btn .i-check { display: none; }
+  .icon-btn.copied .i-copy { display: none; }
+  .icon-btn.copied .i-check { display: block; color: var(--md-sys-color-primary); }
+  h1 {
+    font-size: clamp(2rem, 5.5vw, 3.25rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin: 0 0 1rem;
+  }
+  h2 {
+    font-size: clamp(1.35rem, 2.6vw, 1.75rem);
+    letter-spacing: -0.01em;
+    margin: 0 0 0.75rem;
+  }
+  h3 { font-size: 1rem; margin: 0 0 0.5rem; }
+  p { margin: 0 0 1rem; }
+  .lede { font-size: 1.15rem; color: var(--md-sys-color-on-surface-variant); max-width: 46rem; }
+  .kicker {
+    font: 500 0.75rem/1 var(--mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--md-sys-color-primary);
+    margin: 0 0 1rem;
+  }
+
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative;
+    padding-top: 4.5rem;
+    padding-bottom: 2rem;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: -35% -10% auto -10%;
+    height: 34rem;
+    background:
+      radial-gradient(45rem 22rem at 50% 0%, color-mix(in srgb, var(--md-sys-color-primary) 22%, transparent), transparent 70%);
+    pointer-events: none;
+    z-index: -2;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--md-sys-color-outline-variant) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--md-sys-color-outline-variant) 1px, transparent 1px);
+    background-size: 3rem 3rem;
+    mask-image: radial-gradient(30rem 18rem at 25% 15%, #000, transparent 75%);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .hero .lede { margin-bottom: 1.75rem; }
+  .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+  .cta-note { font: 400 0.85rem/1.4 var(--mono); color: var(--md-sys-color-on-surface-variant); margin: 1.1rem 0 0; }
+
+  /* ---------- terminal ---------- */
+  .term {
+    margin-top: 2.5rem;
+    background: var(--code-bg);
+    color: var(--code-fg);
+    border: 1px solid var(--code-border);
+    border-radius: 0.9rem;
+    padding: 1rem 1.25rem 1.25rem;
+    /* the longest prompt is ~97 monospace characters: scale with the container so
+       it stays on one line until the screen is too narrow for any readable size */
+    container-type: inline-size;
+    font-family: var(--mono);
+    font-size: clamp(0.62rem, 1.7cqi, 0.85rem);
+    font-weight: 400;
+    line-height: 1.9;
+    box-shadow: 0 1.25rem 2.5rem -1rem var(--md-sys-color-shadow);
+  }
+  .term .dots { display: flex; gap: 0.4rem; margin-bottom: 0.85rem; }
+  .term .dots i { width: 0.6rem; height: 0.6rem; border-radius: 50%; background: currentColor; opacity: 0.3; }
+  .term .line { white-space: pre-wrap; padding-left: 1.25rem; text-indent: -1.25rem; }
+  .term .cmd { color: var(--code-accent); }
+
+  /* ---------- result note ---------- */
+  .note {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border-radius: 1.25rem;
+    padding: 2rem 2rem 1.75rem;
+  }
+  .note .kicker { color: inherit; opacity: 0.75; }
+  .note .claim {
+    font-size: clamp(1.4rem, 3.4vw, 2.1rem);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin: 0 0 1rem;
+    max-width: 34rem;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .note a { color: inherit; text-decoration: underline; }
+  .fine { font-size: 0.85rem; opacity: 0.8; }
+
+  /* ---------- cards ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .card {
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 1rem;
+    padding: 1.4rem;
+    background: var(--md-sys-color-surface-container-lowest);
+    transition: border-color 0.15s ease;
+  }
+  .card:hover { border-color: var(--md-sys-color-primary); }
+  .card h3 { font-size: 1.05rem; }
+  .card p { font-size: 0.95rem; color: var(--md-sys-color-on-surface-variant); margin: 0; }
+
+  /* ---------- steps ---------- */
+  .steps { counter-reset: step; display: grid; gap: 1.25rem; margin-top: 1.5rem; }
+  .step { display: grid; grid-template-columns: 2.25rem 1fr; gap: 1rem; align-items: start; }
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    font: 500 0.9rem/2.25rem var(--mono);
+    text-align: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+  }
+  .step p { margin: 0; color: var(--md-sys-color-on-surface-variant); }
+  .step strong { color: var(--md-sys-color-on-background); font-weight: 500; }
+
+  /* ---------- code ---------- */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    border: 1px solid var(--code-border);
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    font: 400 0.875rem/1.7 var(--mono);
+    margin: 0;
+  }
+  .code-block { position: relative; margin-bottom: 1rem; }
+  .code-block .icon-btn { position: absolute; top: 0.4rem; right: 0.4rem; color: var(--code-fg); }
+  .code-block .icon-btn:hover { background: color-mix(in srgb, var(--code-fg) 15%, transparent); }
+
+  /* ---------- misc ---------- */
+  figure { margin: 0; }
+  figure img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 1rem;
+  }
+  figcaption { font-size: 0.9rem; color: var(--md-sys-color-on-surface-variant); margin-top: 0.75rem; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .wall { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1.75rem; margin-top: 1.5rem; }
+  .wall h3 { font: 500 0.75rem/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--md-sys-color-on-surface-variant); margin-bottom: 0.85rem; }
+  .faq-item { border-top: 1px solid var(--md-sys-color-outline-variant); padding: 1.25rem 0; }
+  .faq-item h3 { font-size: 1.05rem; }
+  .faq-item p { color: var(--md-sys-color-on-surface-variant); margin: 0; }
+  hr.rule { border: 0; border-top: 1px solid var(--md-sys-color-outline-variant); max-width: var(--content-w); margin: 0 auto; }
+  footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; font-size: 0.85rem; color: var(--md-sys-color-on-surface-variant); }
+</style>
+</head>
+
+<body>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="./"><span class="leaf" aria-hidden="true">🌱</span> Django Seedkit</a>
+    <nav class="bar-actions">
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark theme">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 0 1-.5-17.99 7.5 7.5 0 0 0 8.49 11.4A9 9 0 0 1 12 21Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm-1-14h2v3h-2V3Zm0 18h2v3h-2v-3ZM3 11h3v2H3v-2Zm15 0h3v2h-3v-2ZM5.6 4.2 7.7 6.3 6.3 7.7 4.2 5.6l1.4-1.4Zm10.7 12.1 2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4Zm2.1-12.1 1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1ZM7.7 17.7l-2.1 2.1-1.4-1.4 2.1-2.1 1.4 1.4Z"/></svg>
+      </button>
+      <a class="bar-link" href="https://github.com/viewflow/seedkit" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <p class="kicker">Agent skill for Django</p>
+  <h1>Scaffold a Django project<br>the way you need it.</h1>
+  <p class="lede">
+    Seedkit is a skill for Claude Code, Cursor, and other coding agents.
+    Tell it what you must build. It asks you a few questions, then writes the project.
+  </p>
+  <div class="cta-row">
+    <material-button variant="filled" size="l" label="Install" href="#install"></material-button>
+    <material-button variant="outlined" size="l" label="Example projects" href="https://github.com/viewflow/seedkit-examples" target="_blank" rel="noopener"></material-button>
+  </div>
+
+  <div class="term" aria-label="Example prompts">
+    <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="line"><span class="cmd">/django-seedkit</span> SaaS landing + waitlist, GDPR-friendly stack (mail, analytics, errors), VPS deploy</div>
+    <div class="line"><span class="cmd">/django-seedkit</span> add proper auth — magic link, lockout on brute force, optional 2FA</div>
+    <div class="line"><span class="cmd">/django-seedkit</span> look at our repo and tell us what's worth adding next</div>
+  </div>
+</section>
+
+<section aria-label="Measured result">
+  <div class="note">
+    <p class="kicker">Measured result</p>
+    <p class="claim">The skill makes Sonnet score higher than Opus and Fable without it.</p>
+    <p>
+      A second model tested four generated projects against the same eight security
+      and configuration checks. Sonnet with the skill scored 32 of 32. Opus with no
+      skill scored 29, Fable with no skill 24, and Sonnet with no skill 23.
+    </p>
+    <p class="fine">
+      One run for each project, four projects, Claude models only. The numbers show
+      that a difference exists. They do not rank the models.
+      <a href="https://github.com/viewflow/seedkit#does-it-help-we-measured-it" target="_blank" rel="noopener">Full method →</a>
+    </p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Why a skill and not a template</p>
+  <h2>A model writes Django from memory. That memory is one or two years old.</h2>
+  <p class="lede">
+    Old memory produces a deprecated authentication setting, or last year's Stripe
+    webhook. It can also open a database port to the local network.
+    Seedkit keeps the current knowledge in
+    <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference files</a>
+    instead. The model only types.
+  </p>
+  <div class="steps">
+    <div class="step">
+      <p><strong>We write each reference file from the package documentation.</strong>
+      One file for each subject: authentication, payments, storage, deploy.</p>
+    </div>
+    <div class="step">
+      <p><strong>Nine scenarios test the files from end to end.</strong>
+      Each scenario generates a project, starts it, runs a smoke test, and then a
+      second model examines the result.</p>
+    </div>
+    <div class="step">
+      <p><strong>Each failure goes back into the file.</strong>
+      The next run does not repeat it. The reference files hold more than 100 hours
+      of this loop, so you do not repeat it either.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>See it run</h2>
+  <figure>
+    <img src="https://raw.githubusercontent.com/viewflow/seedkit/main/.github/demo.gif"
+         alt="An agent reads the prompt, asks a few questions, and writes a Django project that starts." loading="lazy">
+    <figcaption>
+      The first prompt above produced
+      <a href="https://github.com/viewflow/seedkit-examples/tree/main/07-vps-sqlite-saas" target="_blank" rel="noopener">07-vps-sqlite-saas</a>:
+      a Docker and Caddy deploy, Sentry, Litestream backups, and CI.
+    </figcaption>
+  </figure>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Comparison</p>
+  <h2>A cookiecutter alternative for coding agents</h2>
+  <p class="lede">
+    A cookiecutter gives you one fixed set of packages, and you delete the parts
+    that you do not need. Seedkit asks what you must build, then writes only the
+    code for the options that you select.
+  </p>
+  <div class="cards">
+    <div class="card">
+      <h3>You select the packages</h3>
+      <p>Celery or RQ. allauth or magic links. A VPS or Fly.io. You receive the code for your answers, and no other code.</p>
+    </div>
+    <div class="card">
+      <h3>The project is yours</h3>
+      <p>Seedkit writes a normal Django project one time. There is no wrapper library and no dependency at run time.</p>
+    </div>
+    <div class="card">
+      <h3>The version pins are current</h3>
+      <p>Seedkit resolves each version when it writes the project. A template keeps the versions of its own release date.</p>
+    </div>
+    <div class="card">
+      <h3>Add features to a project you have</h3>
+      <p>Give the command <code>add [feature]</code> in your repository. Seedkit adds the dependency, the settings, the <code>.env</code> example, and the CI step.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <p class="kicker">What it adds</p>
+  <h2>One reference file for each subject</h2>
+  <p class="lede">
+    Each file carries the packages, the settings, and the templates for one subject.
+    The set goes from an empty directory to a deploy. It includes the small items,
+    such as <code>robots.txt</code> and the sitemap. Seedkit writes only the files
+    that your answers select.
+  </p>
+  <div class="wall">
+    <div>
+      <h3>Authentication</h3>
+      <div class="chip-row">
+        <material-chip label="Social &amp; password login" href="https://docs.allauth.org/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="Magic-link login" href="https://django-mail-auth.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="Brute-force lockout" href="https://django-axes.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="Two-factor (2FA)"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>Setup &amp; config</h3>
+      <div class="chip-row">
+        <material-chip label="uv" href="https://docs.astral.sh/uv/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="django-environ" href="https://django-environ.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="custom user model" href="https://docs.djangoproject.com/en/stable/topics/auth/customizing/#substituting-a-custom-user-model" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>APIs</h3>
+      <div class="chip-row">
+        <material-chip label="django-modern-rest" href="https://django-modern-rest.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="django-bolt" href="https://bolt.farhana.li/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="CORS headers" href="https://github.com/adamchainz/django-cors-headers" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>Billing</h3>
+      <div class="chip-row">
+        <material-chip label="dj-stripe" href="https://dj-stripe.dev/" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>Async &amp; caching</h3>
+      <div class="chip-row">
+        <material-chip label="Celery" href="https://docs.celeryq.dev/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="django-crontask" href="https://github.com/codingjoe/django-crontask" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="async views" href="https://docs.djangoproject.com/en/stable/topics/async/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="Channels" href="https://channels.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="django-redis" href="https://github.com/jazzband/django-redis" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>Storage &amp; email</h3>
+      <div class="chip-row">
+        <material-chip label="django-storages (S3)" href="https://django-storages.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="Anymail" href="https://anymail.dev/" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>Frontend &amp; SEO</h3>
+      <div class="chip-row">
+        <material-chip label="Tailwind, no Node" href="https://django-tailwind-cli.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="sitemap" href="https://docs.djangoproject.com/en/stable/ref/contrib/sitemaps/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="robots.txt" href="https://django-robots.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="i18n" href="https://docs.djangoproject.com/en/stable/topics/i18n/translation/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="GoatCounter" href="https://www.goatcounter.com/help/start" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>Security</h3>
+      <div class="chip-row">
+        <material-chip label="security headers" href="https://docs.djangoproject.com/en/stable/topics/security/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="django-csp" href="https://django-csp.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="Sentry" href="https://docs.sentry.io/platforms/python/integrations/django/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="structlog" href="https://www.structlog.org/" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>Code quality</h3>
+      <div class="chip-row">
+        <material-chip label="pytest-django" href="https://pytest-django.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="django-zeal" href="https://github.com/PedroBern/django-zeal" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="migration-linter" href="https://github.com/3YOURMIND/django-migration-linter" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="ruff" href="https://docs.astral.sh/ruff/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="pyright" href="https://microsoft.github.io/pyright/" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>Dev experience</h3>
+      <div class="chip-row">
+        <material-chip label="django-silk" href="https://github.com/jazzband/django-silk" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="browser-reload" href="https://github.com/adamchainz/django-browser-reload" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="pre-commit" href="https://pre-commit.com/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="devcontainers" href="https://containers.dev/" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+    <div>
+      <h3>Ops &amp; CI/CD</h3>
+      <div class="chip-row">
+        <material-chip label="dbbackup" href="https://django-dbbackup.readthedocs.io/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="Docker" href="https://docs.docker.com/compose/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="Caddy" href="https://caddyserver.com/docs/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="Fly / Railway / Render" href="https://fly.io/docs/django/" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="GitHub Actions" href="https://docs.github.com/en/actions" target="_blank" rel="noopener"></material-chip>
+        <material-chip label="deploy over SSH" href="https://github.com/appleboy/ssh-action" target="_blank" rel="noopener"></material-chip>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section id="install">
+  <p class="kicker">Install</p>
+  <h2>Two commands, then one prompt</h2>
+  <p class="lede" style="font-size:1rem;">In Claude Code:</p>
+  <div class="code-block">
+    <pre id="install-cmd">claude plugin marketplace add viewflow/seedkit
+claude plugin install seedkit@viewflow</pre>
+    <button class="icon-btn" aria-label="Copy install command" data-copy="install-cmd"><svg class="i-copy" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg><svg class="i-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z"/></svg></button>
+  </div>
+  <p class="lede" style="font-size:1rem;">
+    In Cursor, Codex, OpenCode, or Gemini CLI, use the
+    <a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">skills CLI</a>:
+  </p>
+  <div class="code-block">
+    <pre id="install-cmd-2">npx skills add viewflow/seedkit</pre>
+    <button class="icon-btn" aria-label="Copy skills CLI command" data-copy="install-cmd-2"><svg class="i-copy" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg><svg class="i-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z"/></svg></button>
+  </div>
+  <p class="lede" style="font-size:1rem;">Then, in an empty directory:</p>
+  <div class="code-block">
+    <pre id="install-cmd-3">/django-seedkit</pre>
+    <button class="icon-btn" aria-label="Copy run command" data-copy="install-cmd-3"><svg class="i-copy" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg><svg class="i-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z"/></svg></button>
+  </div>
+</section>
+
+<section>
+  <p class="kicker">FAQ</p>
+  <h2>Questions</h2>
+  <div class="faq-item">
+    <h3>Is Django Seedkit a cookiecutter alternative?</h3>
+    <p>Yes. A cookiecutter gives you one fixed set of packages, and you delete the parts that you do not need. Seedkit asks what you must build, then writes only the code for the options that you select.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Does it work with agents other than Claude Code?</h3>
+    <p>Yes. Install it into Cursor, Codex, OpenCode, Gemini CLI, or any agent that the skills CLI supports. Use the command <code>npx skills add viewflow/seedkit</code>.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Does my project depend on Seedkit when it runs?</h3>
+    <p>No. Seedkit writes a normal Django project one time. There is no wrapper library, no dependency at run time, and nothing more to upgrade later.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Which model must I use?</h3>
+    <p>Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 32 of 32, so a mid-tier model is sufficient. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the <a href="https://github.com/viewflow/seedkit/issues/new" target="_blank" rel="noopener">GitHub issue tracker</a>.</p>
+  </div>
+</section>
+
+<footer>
+  <span>MIT licensed · No runtime dependency · Last updated 2026-07-28</span>
+  <span>
+    <a href="https://github.com/viewflow/seedkit" target="_blank" rel="noopener">GitHub</a> ·
+    <a href="https://github.com/viewflow/seedkit-examples" target="_blank" rel="noopener">Example output</a>
+  </span>
+</footer>
+
+<script>
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const html = document.documentElement;
+    const dark = html.classList.contains('dark');
+    html.classList.remove('light', 'dark');
+    html.classList.add(dark ? 'light' : 'dark');
+  });
+
+  document.querySelectorAll('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const text = document.getElementById(btn.dataset.copy).textContent;
+      navigator.clipboard.writeText(text);
+      btn.classList.add('copied');
+      setTimeout(() => { btn.classList.remove('copied'); }, 1200);
+    });
+  });
+</script>
+
+</body>
+</html>
