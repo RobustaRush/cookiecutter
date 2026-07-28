@@ -372,7 +372,7 @@ uv run manage.py lintmigrations --exclude-apps allauth account socialaccount
 Add after `uv sync --frozen` and before the test step in `.github/workflows/test.yml`:
 
 ```yaml
-      - run: uv run manage.py lintmigrations --exclude-apps allauth account socialaccount
+      - run: uv run manage.py lintmigrations --exclude-apps account socialaccount
 ```
 
 #### setup.cfg (optional — persist the exclusion list)
@@ -381,10 +381,14 @@ Add after `uv sync --frozen` and before the test step in `.github/workflows/test
 
 ```ini
 [django_migration_linter]
-exclude_apps = silk,allauth,account,socialaccount,django_tasks_db
+exclude_apps = silk,account,socialaccount,django_tasks_database
 ```
 
-Check `AppConfig.label` (allauth registers as `account`/`socialaccount`, not `allauth`) if `lintmigrations` still flags an app you tried to exclude.
+A wrong entry is ignored silently — the app stays linted. Read the labels off the running project when `lintmigrations` still flags an app you tried to exclude:
+
+```sh
+uv run manage.py shell -c "from django.apps import apps; print([a.label for a in apps.get_app_configs()])"
+```
 
 ### django-test-migrations
 
