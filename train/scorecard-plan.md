@@ -87,11 +87,7 @@ teaching nothing. Rejected candidates, recorded so they don't get re-proposed:
 | `dockerfile-hygiene` — non-root `USER`, `.dockerignore` | No observed failure in either arm |
 | `ci-runs-checks` — workflow runs the project's own lint/test commands | Applies to 3 of 9 cases; no observed failure |
 | `env-example-complete` — every env var the settings read has an entry | Speculative; both arms plausibly pass |
-| `pinned-deps` — pre-1.0 packages pinned with `==` | Measured: every project in **both** arms ships unpinned pre-1.0 deps (skill 01–09: 1,2,1,5,3,3,3,5,3; baseline: 1,2,1,5,2,4,4). A check both arms fail uniformly is a constant offset, not a signal |
-
-`pinned-deps` is worth acting on as a **skill defect** instead. `lint.md`
-carries pre-1.0 pinning guidance and the skill arm ignores it at the same rate
-as an arm with no guidance at all.
+| `pinned-deps` — pre-1.0 packages pinned with `==` | Contradicts the design. `pyproject.toml` carries ranges and `uv.lock` carries the resolved versions, which is what "pins re-resolve at generation time" means. The skill states a pin only where a specific release is known-bad (`rest-modern-rest.md`); there is no general pinning rule for it to be violating |
 
 ### Group B — run the project's own declared tooling
 
