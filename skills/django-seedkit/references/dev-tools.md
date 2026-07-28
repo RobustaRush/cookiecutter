@@ -1,6 +1,6 @@
 # Developer tools
 
-Docs: <https://github.com/jazzband/django-silk> · <https://github.com/kmmbvnr/django-orbit> · <https://github.com/adamchainz/django-browser-reload> · <https://github.com/PedroBern/django-zeal> · <https://github.com/3YOURMIND/django-migration-linter> · <https://django-test-migrations.readthedocs.io/> · <https://django-extensions.readthedocs.io/>
+Docs: <https://github.com/jazzband/django-silk> · <https://github.com/kmmbvnr/django-orbit> · <https://github.com/adamchainz/django-browser-reload> · <https://github.com/taobojlen/django-zeal> · <https://github.com/3YOURMIND/django-migration-linter> · <https://django-test-migrations.readthedocs.io/> · <https://django-extensions.readthedocs.io/>
 
 Dev-only Django add-ons. Each section is independent — apply only the ones the user opts into.
 
