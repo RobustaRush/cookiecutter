@@ -1,24 +1,24 @@
-# Viewflow Seedkit 🌱
+# Django Seedkit 🌱
 
 An agent skill to start new Django projects or extend existing ones. One sentence in, a running project out. It wires packages together, splits dev and prod settings, and adds CI.
 
 ```
-/seedkit SaaS landing + waitlist, GDPR-friendly stack (mail, analytics, error reporting), VPS deploy
+/django-seedkit SaaS landing + waitlist, GDPR-friendly stack (mail, analytics, error reporting), VPS deploy
 
-/seedkit add proper auth — magic link, lockout on brute force, optional 2FA
+/django-seedkit add proper auth — magic link, lockout on brute force, optional 2FA
 
-/seedkit look at our repo and tell us what's worth adding next
+/django-seedkit look at our repo and tell us what's worth adding next
 ```
 
 [![View Outputs](https://img.shields.io/badge/View%20Outputs-00C853?style=for-the-badge)](https://github.com/viewflow/seedkit-examples)
 
 LLMs write Django from memory. That memory is a year or two old. Think deprecated auth settings and last version's Stripe webhooks. Or database ports open to the local network.
 
-seedkit keeps that knowledge in [maintained reference files](https://github.com/viewflow/seedkit/tree/main/skills/seedkit/references) instead. We build them from package docs, test them end-to-end, and fix every failure back into the file. The model types. That's why scaffolding runs clean on mid-tier Sonnet — your frontier-model hours go to the code only you can write.
+seedkit keeps that knowledge in [maintained reference files](https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references) instead. We build them from package docs, test them end-to-end, and fix every failure back into the file. The model types. That's why scaffolding runs clean on mid-tier Sonnet — your frontier-model hours go to the code only you can write.
 
 Version pins re-resolve at generation time. Nothing goes stale the way an unmaintained starter template does. Nine end-to-end scenarios test the output: generate, boot, smoke-check, audit by a second LLM ([see the outputs](https://github.com/viewflow/seedkit-examples)). The references distill 100+ hours of that generate–boot–fix grind, so you skip it.
 
-It works on the project you already have. Generators only start from zero. `/seedkit add [feature]` wires a new package into a live repo: deps, settings, `.env` example, the CI step.
+It works on the project you already have. Generators only start from zero. `/django-seedkit add [feature]` wires a new package into a live repo: deps, settings, `.env` example, the CI step.
 
 And you get your exact stack, not a preset. A cookiecutter hands you its choices, and you spend day one deleting. Here you pick: Celery or RQ, allauth or magic links, VPS or Fly. You get only the code for the options you picked. The output is a normal Django project you own. No wrapper library, no runtime dependency on seedkit, nothing extra to upgrade later.
 
@@ -82,7 +82,7 @@ npx skills add viewflow/seedkit -a cursor  # pin to one agent
 Now, in whatever empty directory you'd like to populate:
 
 ```
-/seedkit
+/django-seedkit
 ```
 
 ## Project Status

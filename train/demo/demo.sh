@@ -1,5 +1,5 @@
 #!/bin/bash
-# Fake /seedkit REPL for the README demo GIF.
+# Fake /django-seedkit REPL for the README demo GIF.
 # Reads the typed prompt, replays generation steps, prints the real
 # file tree of the 07-vps-sqlite-saas example.
 # Needs the sibling seedkit-examples checkout (../../../seedkit-examples).

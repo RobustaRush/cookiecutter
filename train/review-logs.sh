@@ -149,14 +149,14 @@ Workflow:
    - Findings already covered by an existing reference or `SKILL.md` pitfall — grep before editing.
    - Cosmetic preferences and "consider adding X" nudges.
    - Checklist items that aren't applicable to this case's configuration (no Docker artefact when deploy=none; no `## Deploy` block when deploy=none/managed).
-2. For each real defect, make the smallest edit to the matching `skills/seedkit/SKILL.md`, `skills/seedkit/references/*.md`, or `testcases/*.md`. Follow `seedkit/CLAUDE.md`:
+2. For each real defect, make the smallest edit to the matching `skills/django-seedkit/SKILL.md`, `skills/django-seedkit/references/*.md`, or `testcases/*.md`. Follow `seedkit/CLAUDE.md`:
    - Show the correct sample. Drop redundant "don't" prose if the positive sample covers it.
    - No significance inflation, no fake -ing analysis, no podium voice.
    - Cross-reference, don't duplicate.
 3. If nothing real surfaces, that's a valid outcome — say "no skill change", skip to step 7.
 4. Bump the version to **__TODAY__** in both files (only if you made an edit in step 2):
    - `__REPO__/.claude-plugin/plugin.json` → set `"version": "__TODAY__"`.
-   - `__REPO__/skills/seedkit/SKILL.md` frontmatter → set `version: __TODAY__`.
+   - `__REPO__/skills/django-seedkit/SKILL.md` frontmatter → set `version: __TODAY__`.
 5. Update `__REPO__/CHANGELOG.md`: if a `## __TODAY__ — ` section already exists, extend the matching Keep-a-Changelog bullet (`### Added` / `### Changed` / `### Fixed` / `### Removed`) in place; otherwise insert a new section at the top under the `# Changelog` heading. One short, high-level, user-facing bullet per theme — never one bullet per edit. If CHANGELOG.md exceeds 200 lines after the edit, trim the oldest sections at the bottom to bring it near 150 lines.
 6. Inside `__REPO__/`: `git add -A`, commit, and `git push origin main`. Use the host gitconfig — never pass `--author` or `-c user.email`.
 7. Inside `__PARENT__/`: `git add seedkit`, commit `chore: bump seedkit/ — <one-line reason>`, push. Skip steps 6–7 if no edits were made.

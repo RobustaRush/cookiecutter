@@ -5,7 +5,7 @@ Covers split settings layout, host Postgres, Ruff, WhiteNoise statics, SMTP emai
 ## Prompt
 
 ```
-/seedkit
+/django-seedkit
 
 Project name: 02-shop
 Purpose: small e-commerce site with admin and SMTP transactional email.

@@ -5,7 +5,7 @@ Covers managed-platform deployment with a slim multi-stage image, S3 storage, GA
 ## Prompt
 
 ```
-/seedkit
+/django-seedkit
 
 Project name: 08-fly-app
 Purpose: production app deployed to Fly.io with a slim multi-stage runtime image and S3-compatible object storage.

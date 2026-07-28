@@ -136,7 +136,7 @@ cleanup_testcase() {
     shopt -u nullglob
 }
 
-# Extract the fenced block under "## Prompt" — the literal /seedkit
+# Extract the fenced block under "## Prompt" — the literal /django-seedkit
 # invocation, used to prepend to the generated project's README.
 extract_prompt_block() {
     awk '
@@ -201,7 +201,7 @@ link_skill_for() {
         claude)
             # Project-scoped skill so claude -p in $WORKSPACE finds it.
             mkdir -p "$WORKSPACE/.claude/skills"
-            ln -snf "$REPO/skills/seedkit" "$WORKSPACE/.claude/skills/seedkit"
+            ln -snf "$REPO/skills/django-seedkit" "$WORKSPACE/.claude/skills/django-seedkit"
             ;;
         codex)
             # codex auto-discovers a project-local `.codex/skills/<name>/
@@ -209,7 +209,7 @@ link_skill_for() {
             # confirmed by asking a codex session to list its skills with
             # this symlinked in. No CLI subcommand needed.
             mkdir -p "$WORKSPACE/.codex/skills"
-            ln -snf "$REPO/skills/seedkit" "$WORKSPACE/.codex/skills/seedkit"
+            ln -snf "$REPO/skills/django-seedkit" "$WORKSPACE/.codex/skills/django-seedkit"
             ;;
         agy)
             # Antigravity has no project-scoped skill directory (a
@@ -254,10 +254,10 @@ run_phase() {
 
     # Agy-specific prompt rewrites, done out here so cli_dispatch stays
     # generic across callers (review-logs.sh/run-baseline.sh never send a
-    # `/seedkit` prompt, so this can't live in the shared dispatcher).
+    # `/django-seedkit` prompt, so this can't live in the shared dispatcher).
     if [[ "$cli" == "agy" ]]; then
         prompt=$(printf '%s' "$prompt" \
-            | sed 's|^/seedkit$|Use the seedkit skill to scaffold the project per the questionnaire below.|')
+            | sed 's|^/django-seedkit$|Use the seedkit skill to scaffold the project per the questionnaire below.|')
         prompt="Shell-tool note: your run_shell_command runs each call synchronously and does not preserve & backgrounding across calls. When the smoke / deploy snippet backgrounds a process with &, run the whole snippet inside a single \"timeout 60 bash -c '...'\" invocation so it executes in one child shell and self-terminates.
 
 $prompt"
@@ -394,7 +394,7 @@ done
     echo
     echo "Reference Django projects scaffolded by the [seedkit](https://github.com/viewflow/seedkit) skill, paired with the prompts that produced them."
     echo
-    echo "Each subdirectory is a fresh project generated end-to-end by \`claude -p\` running the matching testcase from \`seedkit/testcases/\`. The first section of every project's \`README.md\` is the verbatim \`/seedkit\` prompt — answers to every Foundation / add-on / production question — so the exact configuration is reproducible."
+    echo "Each subdirectory is a fresh project generated end-to-end by \`claude -p\` running the matching testcase from \`seedkit/testcases/\`. The first section of every project's \`README.md\` is the verbatim \`/django-seedkit\` prompt — answers to every Foundation / add-on / production question — so the exact configuration is reproducible."
     echo
     echo "## Projects"
     echo

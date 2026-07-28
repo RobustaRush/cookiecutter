@@ -5,7 +5,7 @@ Covers the GitHub-Actions-over-SSH deploy path, self-hosted Bugsink for error re
 ## Prompt
 
 ```
-/seedkit
+/django-seedkit
 
 Project name: 09-ssh-deploy
 Purpose: production app deployed to a remote host over SSH from GitHub Actions, using self-hosted services.

@@ -5,7 +5,7 @@ Covers the SQLite mini-prod path on a single VPS: WAL-tuned `production.py`, sep
 ## Prompt
 
 ```
-/seedkit
+/django-seedkit
 
 Project name: 07-vps-sqlite-saas
 Purpose: production-ready SaaS skeleton deployed to a single VPS via docker-compose + Caddy, using the SQLite mini-prod stack (no separate DB / cache / queue server).

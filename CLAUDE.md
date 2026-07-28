@@ -3,7 +3,7 @@
 Claude Code skill for bootstrapping Django projects + the testcase harness that exercises it.
 
 Layout:
-- `skills/seedkit/SKILL.md` + `skills/seedkit/references/*.md` — the skill itself.
+- `skills/django-seedkit/SKILL.md` + `skills/django-seedkit/references/*.md` — the skill itself.
 - `testcases/0[1-9]-*.md` — scripted runs that exercise the skill end-to-end.
 - `train/` — the testcase harness: `run-tests.sh` pipes each testcase through an agent CLI and writes per-run logs; `run-baseline.sh` generates the no-skill control arm; `review-logs.sh` auto-patches the skill from those logs; `agents.sh` is the shared multi-CLI (claude/codex/agy) dispatch the three scripts source.
 - `workspace/` — gitignored scratch where generated projects live; wiped between runs.
@@ -26,7 +26,7 @@ Each reference is a paste-ready snippet plus the minimum prose needed to use it 
 
 ## Changelog
 
-`seedkit/CHANGELOG.md` tracks user-facing changes. Versions are dated `YY.WW.D` — `date +%y.%V.%u` — one section per day; all of a day's commits collapse into one block. After every skill edit, append (or extend) one short bullet under today's section using Keep-a-Changelog headings (`Added` / `Changed` / `Fixed` / `Removed`). Batch related fixes into a single bullet. Bump `version` to the same date string in both `.claude-plugin/plugin.json` and `skills/seedkit/SKILL.md` frontmatter. If `CHANGELOG.md` exceeds ~200 lines, trim the oldest sections — git keeps the rest. `train/review-logs.sh` does this inline per log iteration — version bump + changelog edit happen in the same commit as the reference fix.
+`seedkit/CHANGELOG.md` tracks user-facing changes. Versions are dated `YY.WW.D` — `date +%y.%V.%u` — one section per day; all of a day's commits collapse into one block. After every skill edit, append (or extend) one short bullet under today's section using Keep-a-Changelog headings (`Added` / `Changed` / `Fixed` / `Removed`). Batch related fixes into a single bullet. Bump `version` to the same date string in both `.claude-plugin/plugin.json` and `skills/django-seedkit/SKILL.md` frontmatter. If `CHANGELOG.md` exceeds ~200 lines, trim the oldest sections — git keeps the rest. `train/review-logs.sh` does this inline per log iteration — version bump + changelog edit happen in the same commit as the reference fix.
 
 ## Maintaining testcases
 
@@ -59,7 +59,7 @@ Generated projects land in `../seedkit-examples/` (the sibling submodule). Per-r
 
 `run-baseline.sh` is the control arm: same `## Prompt`, same `## Boot check`, same auto-fix instruction, no skill. The two arms must differ in one variable only, so anything given to one is given to both.
 
-- Output goes to `seedkit-examples/baselines/<model>/<case>/` — `model_slug()` in `agents.sh` turns `claude-sonnet-5` into `sonnet` — so the control arm publishes with the skill arm and each model's control sits beside the others instead of overwriting them. That sits under the `.claude/skills/seedkit` symlink `run-tests.sh` creates, so `unlink_skill()` removes the project-scoped symlinks before the run and `assert_skill_unreachable()` walks up from the baseline root and refuses to start if anything is still reachable (a hand-placed real directory, or a global install under `~/.claude/skills/` or `~/.gemini/config/plugins/`). `run-tests.sh` recreates the symlink at the top of its next run, so the removal costs nothing. The two scripts can't run concurrently anyway — they share one workspace lock.
+- Output goes to `seedkit-examples/baselines/<model>/<case>/` — `model_slug()` in `agents.sh` turns `claude-sonnet-5` into `sonnet` — so the control arm publishes with the skill arm and each model's control sits beside the others instead of overwriting them. That sits under the `.claude/skills/django-seedkit` symlink `run-tests.sh` creates, so `unlink_skill()` removes the project-scoped symlinks before the run and `assert_skill_unreachable()` walks up from the baseline root and refuses to start if anything is still reachable (a hand-placed real directory, or a global install under `~/.claude/skills/` or `~/.gemini/config/plugins/`). `run-tests.sh` recreates the symlink at the top of its next run, so the removal costs nothing. The two scripts can't run concurrently anyway — they share one workspace lock.
 - Baseline logs go to `seedkit-examples/logs/baselines/`: inside the wholesale-gitignored `logs/`, and outside `review-logs.sh`'s non-recursive `logs/*.log` glob. `review-logs.sh` also rejects any `baseline-*.log` by name and any log with no `BUILD` phase, so an explicit argument can't get one through either.
 - Both arms are graded on `train/scorecard.md` — eight arm-neutral static checks emitting `SCORE n/8`. The testcase's `## Review` section is skill-arm-only; it asserts structure the control was never asked for.
 - Both arms write to one `results-<cli>.tsv` in the examples repo (`case / arm / cli / model / score / build_s / tool_calls / fixes / rewrites / run_at`); the `arm` column separates them, so comparing is `column -t < results-claude.tsv`. Split per CLI because comparing a claude skill run against a codex baseline measures the CLI, not the skill.

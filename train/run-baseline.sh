@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Generate the "no-skill" control arm for each testcase: a fresh agent
-# CLI with no /seedkit skill reachable, given the same ## Prompt and the
+# CLI with no /django-seedkit skill reachable, given the same ## Prompt and the
 # same ## Boot check as the skill arm, into
 # seedkit-examples/baselines/<model>/.
 #
@@ -17,7 +17,7 @@
 # publishes with the skill arm, one subtree per model — sonnet, opus, and
 # fable controls sit side by side instead of overwriting each other, and
 # the results TSV keys rows on the model for the same reason. That path
-# sits under the .claude/skills/seedkit symlink
+# sits under the .claude/skills/django-seedkit symlink
 # run-tests.sh creates, and a control group that can see the treatment is
 # not a control group — so unlink_skill() removes the project-scoped
 # symlinks for the duration of the run and assert_skill_unreachable()
@@ -87,9 +87,9 @@ fi
 # so nothing is lost.
 unlink_skill() {
     local d
-    for d in "$WORKSPACE/.claude/skills/seedkit" \
-             "$WORKSPACE/.codex/skills/seedkit" \
-             "$WORKSPACE/.gemini/skills/seedkit"; do
+    for d in "$WORKSPACE/.claude/skills/django-seedkit" \
+             "$WORKSPACE/.codex/skills/django-seedkit" \
+             "$WORKSPACE/.gemini/skills/django-seedkit"; do
         if [[ -L "$d" ]]; then
             rm -f "$d" && echo "unlinked skill: $d"
         elif [[ -e "$d" ]]; then
@@ -104,15 +104,15 @@ unlink_skill() {
 assert_skill_unreachable() {
     local probe=$1 found=0 d
     while :; do
-        for d in "$probe/.claude/skills/seedkit" \
-                 "$probe/.codex/skills/seedkit" \
-                 "$probe/.gemini/skills/seedkit"; do
+        for d in "$probe/.claude/skills/django-seedkit" \
+                 "$probe/.codex/skills/django-seedkit" \
+                 "$probe/.gemini/skills/django-seedkit"; do
             [[ -e "$d" ]] && { echo "  reachable: $d" >&2; found=1; }
         done
         [[ "$probe" == "/" ]] && break
         probe="$(dirname "$probe")"
     done
-    for d in "$HOME/.claude/skills/seedkit" "$HOME/.gemini/config/plugins/seedkit"; do
+    for d in "$HOME/.claude/skills/django-seedkit" "$HOME/.gemini/config/plugins/django-seedkit"; do
         [[ -e "$d" ]] && { echo "  installed: $d" >&2; found=1; }
     done
     if [[ $found -eq 1 ]]; then
@@ -202,10 +202,10 @@ for tc in "${FILES[@]}"; do
     prompt_section=$(extract_section "$tc" "Prompt")
     boot_section=$(extract_section "$tc" "Boot check")
 
-    # Strip the leading `/seedkit` / `/seedkit-slim` invocation — with
+    # Strip the leading `/django-seedkit` / `/django-seedkit-slim` invocation — with
     # no skill loaded, that line is dead text and biases the agent.
     prompt_body=$(printf '%s\n' "$prompt_section" \
-        | sed -E '/^\/seedkit(-slim)?$/d')
+        | sed -E '/^\/django-seedkit(-slim)?$/d')
 
     # The boot check is written for run-tests.sh, where the agent works
     # in $WORKSPACE and creates `<project>/` beneath it — hence the

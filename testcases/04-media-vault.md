@@ -5,7 +5,7 @@ Covers ASGI + django-channels (WebSockets with channels-redis layer), S3-compati
 ## Prompt
 
 ```
-/seedkit
+/django-seedkit
 
 Project name: 04-media-vault
 Purpose: media-heavy app where uploads land in S3, processing runs as Redis-queued background tasks, and clients subscribe over WebSockets for status updates.

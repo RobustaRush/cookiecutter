@@ -12,7 +12,7 @@ Each test case is one `.md` file with three sections — four when it exercises 
 # <Title>
 
 ## Prompt
-<Fenced block: the literal `/seedkit` invocation plus every answer. No open
+<Fenced block: the literal `/django-seedkit` invocation plus every answer. No open
 questions. The harness also prepends this block to the generated project's
 README.md, so it doubles as the reproduction record.>
 

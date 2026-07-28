@@ -5,7 +5,7 @@ Smallest path that boots a working Django project. Baseline — if this fails, e
 ## Prompt
 
 ```
-/seedkit
+/django-seedkit
 
 Project name: 01-minimal-blog
 Purpose: a tiny blog to verify the skill works end-to-end.

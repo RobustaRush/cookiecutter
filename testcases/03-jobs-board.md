@@ -5,7 +5,7 @@ Covers the "Postgres in Docker, Django on host" hybrid mode, plus Redis-backed C
 ## Prompt
 
 ```
-/seedkit
+/django-seedkit
 
 Project name: 03-jobs-board
 Purpose: job board with background email notifications and a daily digest.

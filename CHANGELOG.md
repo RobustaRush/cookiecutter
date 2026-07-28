@@ -2,6 +2,12 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
+## 26.31.2 — 2026-07-28
+
+### Changed
+- The skill is now `django-seedkit` — invoke it as `/django-seedkit`. `skills/seedkit/` moved to `skills/django-seedkit/`, and the harness symlinks, testcase prompts and demo tape follow. The repo, the marketplace and the plugin keep the name `seedkit`, so `/plugin install seedkit@viewflow` and `npx skills add viewflow/seedkit` are unchanged and existing installs keep working.
+- `README.md` — titled "Django Seedkit", and a new "Does it help? We measured it" section: four specs generated with the skill on Sonnet and without it on Sonnet, Opus and Fable, graded on the eight arm-neutral checks.
+
 ## 26.31.1 — 2026-07-27
 
 ### Fixed

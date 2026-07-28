@@ -10,7 +10,7 @@ Type "bash demo.sh" Enter
 Sleep 500ms
 Show
 Sleep 800ms
-Type "/seedkit SaaS landing + waitlist, GDPR-friendly stack, VPS deploy"
+Type "/django-seedkit SaaS landing + waitlist, GDPR-friendly stack, VPS deploy"
 Sleep 700ms
 Enter
 Sleep 9s

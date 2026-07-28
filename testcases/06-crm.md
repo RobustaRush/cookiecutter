@@ -5,7 +5,7 @@ Covers django-silk profiling, the Database backend for Django Tasks (no Redis), 
 ## Prompt
 
 ```
-/seedkit
+/django-seedkit
 
 Project name: 06-silk-lab
 Purpose: profile a few request paths with django-silk and run a simple background email task on the DB backend.
