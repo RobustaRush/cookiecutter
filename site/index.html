@@ -61,7 +61,7 @@ document.documentElement.className =
       "name": "Does my project depend on Seedkit when it runs?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. Seedkit writes a normal Django project one time. It adds no wrapper library, no dependency at run time, and nothing more to upgrade later."
+        "text": "No. Seedkit writes a normal Django project once. It adds no wrapper library, no dependency at run time, and nothing more to upgrade later."
       }
     },
     {
@@ -402,9 +402,9 @@ document.documentElement.className =
 <section aria-label="Measured result">
   <div class="note">
     <p class="kicker">Measured result</p>
-    <p class="claim">The generated projects pass more production checks.</p>
+    <p class="claim">Sonnet with the skill scores above Fable and Opus without it.</p>
     <p>
-      Sonnet with the skill scores above Fable and Opus without it. To measure that, the
+      The generated projects pass more production checks. To measure that, the
       same nine projects were generated with more than one model, with the skill enabled
       and with no skill at all. A second model then ran the same eight security and
       configuration checks on every result. With the skill, all nine projects passed all eight —
@@ -420,39 +420,6 @@ document.documentElement.className =
 </section>
 
 <hr class="rule">
-
-<section>
-  <p class="kicker">Why a skill and not a prompt</p>
-  <h2>A prompt cannot add what the model does not know</h2>
-  <p class="lede">
-    The model writes Django from memory, and that memory is one or two years old.
-    So it writes an authentication setting that Django deprecated, or last year's
-    Stripe webhook. Or it opens the database port to the local network. You can
-    correct all that in your prompt — if you already know the answers.
-    Seedkit already knows them, and it is that prompt, written and tested.
-  </p>
-  <div class="steps">
-    <div class="step">
-      <p><strong>A
-      <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference file</a>
-      cuts the package documentation down to what the model does not know.</strong>
-      Today's setting names, today's package names. One file for each topic:
-      authentication, payments, storage, deploy.</p>
-    </div>
-    <div class="step">
-      <p><strong>You do not have to know what to ask for.</strong>
-      Which package locks an account after failed logins? Which settings does a
-      production deploy need? The files carry an answer, and the skill proposes it
-      to you.</p>
-    </div>
-    <div class="step">
-      <p><strong>More than 100 hours went into finding what the model gets wrong.</strong>
-      Each file goes into a generated project. We start it, read the result, then
-      correct or drop what failed. What survives is the part the model is missing.
-      You skip the search.</p>
-    </div>
-  </div>
-</section>
 
 <section>
   <h2>See it run</h2>
@@ -475,7 +442,7 @@ document.documentElement.className =
   <p class="lede">
     A cookiecutter gives you one fixed set of packages, and you delete the parts
     that you do not need. Seedkit knows more than 50 Django packages, and most topics
-    give you more than one of them to pick from. It asks what you must build, then
+    offer more than one option. It asks what you must build, then
     writes only the code for the options that you select.
   </p>
   <div class="cards">
@@ -485,11 +452,11 @@ document.documentElement.className =
     </div>
     <div class="card">
       <h3>The project is yours</h3>
-      <p>Seedkit writes a normal Django project one time. It adds no wrapper library, and your project has no dependency at run time.</p>
+      <p>Seedkit writes a normal Django project once. It adds no wrapper library, and your project has no dependency at run time.</p>
     </div>
     <div class="card">
       <h3>The version pins are current</h3>
-      <p>Seedkit resolves each version when it writes the project. A template keeps the versions of its own release date.</p>
+      <p>Seedkit resolves each version when it writes the project. A template gives you the versions from its own release date.</p>
     </div>
     <div class="card">
       <h3>Add features to a project you have</h3>
@@ -502,10 +469,10 @@ document.documentElement.className =
   <p class="kicker">What it adds</p>
   <h2>One reference file for each topic</h2>
   <p class="lede">
-    Each file carries the packages, the settings, and the templates for one topic.
-    The set goes from an empty directory to a deploy. It includes the small items,
-    such as <code>robots.txt</code> and the sitemap. Seedkit writes only the files
-    that your answers select.
+    Each file has the packages, the settings, and the templates for one topic.
+    Together they cover every step, from an empty directory to a deploy. They also
+    cover the small items, such as <code>robots.txt</code> and the sitemap. Seedkit
+    writes only the files that your answers select.
   </p>
   <div class="wall">
     <div>
@@ -634,6 +601,41 @@ claude plugin install seedkit@viewflow</pre>
   </div>
 </section>
 
+<hr class="rule">
+
+<section>
+  <p class="kicker">Why a skill and not a prompt</p>
+  <h2>A prompt cannot add what the model does not know</h2>
+  <p class="lede">
+    The model writes Django from memory, and that memory is one or two years old.
+    So it writes an authentication setting that Django deprecated, or last year's
+    Stripe webhook. Or it opens the database port to the local network. You can
+    correct all that in your prompt — if you already know the answers.
+    Seedkit already knows them, and it is that prompt, written and tested.
+  </p>
+  <div class="steps">
+    <div class="step">
+      <p><strong>A
+      <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference file</a>
+      keeps only the part of the package documentation that the model does not know.</strong>
+      Today's setting names, today's package names. One file for each topic:
+      authentication, payments, storage, deploy.</p>
+    </div>
+    <div class="step">
+      <p><strong>You do not have to know what to ask for.</strong>
+      Which package locks an account after failed logins? Which settings does a
+      production deploy need? The files have the answer, and the skill offers it
+      to you.</p>
+    </div>
+    <div class="step">
+      <p><strong>More than 100 hours of testing found what the model gets wrong.</strong>
+      Each file goes into a generated project. We start it, read the result, then
+      correct or drop what failed. What stays in the file is the part the model does not know.
+      You skip the search.</p>
+    </div>
+  </div>
+</section>
+
 <section>
   <p class="kicker">FAQ</p>
   <h2>Questions</h2>
@@ -647,7 +649,7 @@ claude plugin install seedkit@viewflow</pre>
   </div>
   <div class="faq-item">
     <h3>Does my project depend on Seedkit when it runs?</h3>
-    <p>No. Seedkit writes a normal Django project one time. It adds no wrapper library, no dependency at run time, and nothing more to upgrade later.</p>
+    <p>No. Seedkit writes a normal Django project once. It adds no wrapper library, no dependency at run time, and nothing more to upgrade later.</p>
   </div>
   <div class="faq-item">
     <h3>Which model must I use?</h3>
