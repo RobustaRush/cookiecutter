@@ -6,6 +6,7 @@ Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One 
 
 ### Changed
 - The skill is now `django-seedkit` — invoke it as `/django-seedkit`. `skills/seedkit/` moved to `skills/django-seedkit/`, and the harness symlinks, testcase prompts and demo tape follow. The repo, the marketplace and the plugin keep the name `seedkit`, so `/plugin install seedkit@viewflow` and `npx skills add viewflow/seedkit` are unchanged and existing installs keep working.
+- `deploy-vps.md` and `ci.md` spell out the SQLite variant of their Postgres-shaped samples — which compose services and volumes to swap, and that the CI service container goes away — so a SQLite + Litestream project doesn't have to infer them.
 - `README.md` — titled "Django Seedkit", and a new "Does it help? We measured it" section: four specs generated with the skill on Sonnet and without it on Sonnet, Opus and Fable, graded on the eight arm-neutral checks.
 
 ### Fixed

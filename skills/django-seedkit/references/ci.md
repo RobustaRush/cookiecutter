@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      # Drop this block when DB=SQLite — the sqlite `DATABASE_URL` below
+      # needs no service container.
       postgres:
         image: postgres:17
         env:

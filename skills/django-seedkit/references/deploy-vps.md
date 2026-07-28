@@ -68,6 +68,8 @@ volumes:
 
 Every service added later (`redis`, `celery`, `celery-beat`, `ws`) gets the same `logging: *logging` line.
 
+On SQLite + Litestream (`references/database.md`): drop the `db` service, its `pgdata` volume and `web`'s `depends_on`; declare a `data:` volume and mount it at `/data` in `web` and in every worker service; drop the `migrate` line from `## Deploy` below — `entrypoint.sh` runs it on each container boot.
+
 Stock `postgres` ships `shared_buffers=128MB` — laptop sizing. On a dedicated box, add `command: postgres -c shared_buffers=<25% of RAM> -c effective_cache_size=<75% of RAM>` to the `db` service (<https://pgtune.leopard.in.ua/> generates the full set).
 
 ## deploy/.env.prod.example — ship this in the repo
