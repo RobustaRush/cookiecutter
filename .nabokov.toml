@@ -1,0 +1,3 @@
+# nabokov prose-linter config — https://pypi.org/project/nabokov/
+# Acronyms the Django/web audience reads without expansion (NB309).
+known_acronyms = ["RQ", "RPS", "GDPR", "CSP"]
