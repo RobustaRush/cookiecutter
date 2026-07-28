@@ -444,14 +444,10 @@ document.documentElement.className =
       that the question exists.</p>
     </div>
     <div class="step">
-      <p><strong>Nine scenarios test the files from end to end.</strong>
-      Each scenario generates a project, starts it, and runs a smoke test.
-      A second model then examines the result.</p>
-    </div>
-    <div class="step">
-      <p><strong>Every failure goes into the file.</strong>
-      The next run does not hit it again, and the files now hold more than 100 hours
-      of this work. You skip it.</p>
+      <p><strong>We keep only what we could run.</strong>
+      Each file goes into a generated project. We start the project, read the result,
+      then correct or drop what failed. More than 100 hours of that work sits in
+      these files, and you do not repeat it.</p>
     </div>
   </div>
 </section>
@@ -476,13 +472,14 @@ document.documentElement.className =
   <h2>A cookiecutter alternative for coding agents</h2>
   <p class="lede">
     A cookiecutter gives you one fixed set of packages, and you delete the parts
-    that you do not need. Seedkit asks what you must build, then writes only the
-    code for the options that you select.
+    that you do not need. Seedkit has 49 reference files, and most topics offer more
+    than one option. It asks what you must build, then writes only the code for the
+    options that you select.
   </p>
   <div class="cards">
     <div class="card">
       <h3>You select the packages</h3>
-      <p>Celery or RQ. allauth or magic links. A VPS or Fly.io. You receive the code for your answers, and no other code.</p>
+      <p>Background jobs on Celery, RQ, or the database. Static files on S3 or WhiteNoise. A deploy to a VPS, to Fly.io, or over SSH. You receive the code for your answers, and no other code.</p>
     </div>
     <div class="card">
       <h3>The project is yours</h3>
