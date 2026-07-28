@@ -4,6 +4,9 @@ Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One 
 
 ## 26.31.2 — 2026-07-28
 
+### Added
+- `train/run-reproduce.sh` — a third grading phase, arm-neutral: hand a fresh agent a `git archive` of a published project and ask it to get that project running from the README alone. Every existing grader decides by reading files, and structure is what the skill is reliably best at, so both sit at their maximum — 8/8 in every scored case, and the per-case `## Review` has never flagged an issue across 17 logs. This asks what neither can: whether the artefact works for someone who wasn't there when it was built. Reports `REPRODUCE PASS|FAIL|BLOCKED` plus one `GAP` line per thing the README should have said, into `reproduce-<cli>.tsv`.
+
 ### Changed
 - The skill is now `django-seedkit` — invoke it as `/django-seedkit`. `skills/seedkit/` moved to `skills/django-seedkit/`, and the harness symlinks, testcase prompts and demo tape follow. The repo, the marketplace and the plugin keep the name `seedkit`, so `/plugin install seedkit@viewflow` and `npx skills add viewflow/seedkit` are unchanged and existing installs keep working.
 - `deploy-vps.md` and `ci.md` spell out the SQLite variant of their Postgres-shaped samples — which compose services and volumes to swap, and that the CI service container goes away — so a SQLite + Litestream project doesn't have to infer them.
