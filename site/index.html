@@ -69,7 +69,7 @@ document.documentElement.className =
       "name": "Which model must I use?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 32 of 32, so a mid-tier model is enough. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the GitHub issue tracker."
+        "text": "Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 72 of 72, so a mid-tier model is enough. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the GitHub issue tracker."
       }
     }
   ]
@@ -404,15 +404,16 @@ document.documentElement.className =
     <p class="kicker">Measured result</p>
     <p class="claim">The generated projects pass more production checks.</p>
     <p>
-      A second model tested four generated projects. Each project went through the
-      same eight security and configuration checks. With the skill, each project
-      scored 8 of 8 — 32 of 32 in total. The same prompts with no skill scored 29
-      with Opus, 24 with Fable, and 23 with Sonnet. So Sonnet with the skill scored
-      higher than Opus without it.
+      The skill lifts Sonnet above Fable and Opus running without it. Nine projects,
+      each generated twice: once with the skill, once from the same prompt without it.
+      A second model then runs the same eight security and configuration checks on
+      every result. With the skill, all nine projects passed all eight — 72 of 72.
+      Without it, a quarter of the checks failed.
     </p>
     <p class="fine">
-      One run for each project, four projects, Claude models only. The numbers show
-      that a difference exists. They do not rank the models.
+      Control arms: Fable 54 of 72 on all nine projects, Sonnet 33 of 48 on six, Opus
+      29 of 32 on four. One run for each project and model, Claude models only. The
+      numbers show that a difference exists. They do not rank the models.
       <a href="https://github.com/viewflow/seedkit#does-it-help-we-measured-it" target="_blank" rel="noopener">Full method →</a>
     </p>
   </div>
@@ -426,8 +427,9 @@ document.documentElement.className =
   <p class="lede">
     The model writes Django from memory, and that memory is one or two years old.
     So it writes an authentication setting that Django deprecated, or last year's
-    Stripe webhook. Or it opens the database port to the local network. A longer
-    prompt does not repair this, because the knowledge is not there to start with.
+    Stripe webhook. Or it opens the database port to the local network. You can
+    correct all that in your prompt — if you already know the answers.
+    Seedkit already knows them, and it is that prompt, written and tested.
   </p>
   <div class="steps">
     <div class="step">
@@ -438,10 +440,10 @@ document.documentElement.className =
       authentication, payments, storage, deploy.</p>
     </div>
     <div class="step">
-      <p><strong>The same files record the option that works.</strong>
+      <p><strong>You do not have to know what to ask for.</strong>
       Which package locks an account after failed logins? Which settings does a
-      production deploy need? The skill proposes an answer. You do not have to know
-      that the question exists.</p>
+      production deploy need? The files carry an answer, and the skill proposes it
+      to you.</p>
     </div>
     <div class="step">
       <p><strong>More than 100 hours went into finding what the model gets wrong.</strong>
@@ -472,9 +474,9 @@ document.documentElement.className =
   <h2>A cookiecutter alternative for coding agents</h2>
   <p class="lede">
     A cookiecutter gives you one fixed set of packages, and you delete the parts
-    that you do not need. Seedkit has 49 reference files, and most topics offer more
-    than one option. It asks what you must build, then writes only the code for the
-    options that you select.
+    that you do not need. Seedkit knows more than 50 Django packages, and most topics
+    give you more than one of them to pick from. It asks what you must build, then
+    writes only the code for the options that you select.
   </p>
   <div class="cards">
     <div class="card">
@@ -649,7 +651,7 @@ claude plugin install seedkit@viewflow</pre>
   </div>
   <div class="faq-item">
     <h3>Which model must I use?</h3>
-    <p>Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 32 of 32, so a mid-tier model is enough. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the <a href="https://github.com/viewflow/seedkit/issues/new" target="_blank" rel="noopener">GitHub issue tracker</a>.</p>
+    <p>Any model can run the skill. The knowledge is in the reference files, so the model does not supply it. Sonnet with the skill scored 72 of 72, so a mid-tier model is enough. Keep the expensive models for the code that only you can write. Our tests run on Sonnet, so other models have less coverage. Report a problem in the <a href="https://github.com/viewflow/seedkit/issues/new" target="_blank" rel="noopener">GitHub issue tracker</a>.</p>
   </div>
 </section>
 
