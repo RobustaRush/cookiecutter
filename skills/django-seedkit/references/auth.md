@@ -128,7 +128,7 @@ INSTALLED_APPS = [
     "django.contrib.admin",         # already present from startproject
     # ... other contrib apps ...
     "mailauth",
-    "mailauth.contrib.user",        # only if EmailUser route picked
+    "config.apps.MailAuthUserConfig",   # only if EmailUser route picked
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -145,6 +145,23 @@ LOGIN_URL = "mailauth:login"
 LOGIN_REDIRECT_URL = "/"            # see Option A — don't dump non-staff
                                     # users on /admin/.
 ```
+
+`mailauth.contrib.user`'s `AppConfig` declares no `default_auto_field`, so it
+inherits the project's `BigAutoField` and diverges from the `AutoField` primary
+key in its own shipped migration. Pin it back:
+
+```python
+# config/apps.py
+from mailauth.contrib.user.apps import AuthConfig
+
+
+class MailAuthUserConfig(AuthConfig):
+    default_auto_field = "django.db.models.AutoField"
+```
+
+Without it every `migrate` warns about unapplied model changes, `makemigrations`
+writes a migration into `.venv/` (gone on the next `uv sync`), and CI's
+`makemigrations --check` fails.
 
 ### URLs
 
