@@ -7,10 +7,10 @@ Docs: <https://github.com/RealOrangeOne/django-tasks-database>
 ## Install
 
 ```sh
-uv add django-tasks-db
+uv add django-tasks-db django-tasks
 ```
 
-`django-tasks-db` 0.12.0 is built against the standalone `django-tasks` backport (import path `django_tasks`) and pulls it in as a dependency — Django 6's stdlib `django.tasks` is a separate module. Use `from django_tasks import task` in app code.
+`django-tasks-db` 0.12.0 is built against the standalone `django-tasks` backport (import path `django_tasks`) — Django 6's stdlib `django.tasks` is a separate module. Use `from django_tasks import task` in app code. `django-tasks` is listed explicitly because `django_tasks` registers in `INSTALLED_APPS`; the adapter's own pin is not a declaration.
 
 ## INSTALLED_APPS
 

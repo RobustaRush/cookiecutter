@@ -11,10 +11,10 @@ Requires `django>=5.0`, Python 3.11+.
 `msgspec` is the recommended schema engine (fastest JSON path). Add it as the default:
 
 ```sh
-uv add 'django-modern-rest[msgspec,openapi]'
+uv add 'django-modern-rest[msgspec,openapi]==0.11.0' 'pyjwt[crypto]'
 ```
 
-Add the `jwt` extra (`'django-modern-rest[msgspec,openapi,jwt]'`) only when the user wants dmr's JWT auth — it brings `pyjwt[crypto]`.
+Pre-1.0 release — pin it rather than relying on `>=`. `pyjwt` comes along even without dmr's JWT auth: 0.11.0's throttling module imports `jwt` unconditionally, and `manage.py check` dies with `ModuleNotFoundError: No module named 'jwt'` without it. For dmr's JWT auth itself, add the `jwt` extra (`'django-modern-rest[msgspec,openapi,jwt]==0.11.0'`).
 
 If the user wants pydantic schemas instead, swap `msgspec` → `pydantic`. Both extras can co-exist.
 
@@ -114,4 +114,3 @@ curl -sf -X POST http://127.0.0.1:8000/api/users/ \
 
 - Don't put controllers in `config/` — Django app discovery only scans `INSTALLED_APPS`.
 - `dmr` belongs in `INSTALLED_APPS` only for the OpenAPI UI's static files — see Install. Adding it for plain endpoints buys nothing.
-- Pre-1.0 release; pin a known-good version in `pyproject.toml` rather than relying on `>=`.

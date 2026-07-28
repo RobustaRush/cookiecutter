@@ -9,10 +9,10 @@ Requires Redis (`references/redis.md`).
 ## Install
 
 ```sh
-uv add django-tasks-rq django-rq
+uv add django-tasks-rq django-rq django-tasks
 ```
 
-`django-tasks-rq` 0.12.0 is built against the standalone `django-tasks` backport (import path `django_tasks`) and pulls it in as a dependency — Django 6's stdlib `django.tasks` is a separate module. Use `from django_tasks import task` in app code.
+`django-tasks-rq` 0.12.0 is built against the standalone `django-tasks` backport (import path `django_tasks`) — Django 6's stdlib `django.tasks` is a separate module. Use `from django_tasks import task` in app code. `django-tasks` is listed explicitly because `django_tasks` registers in `INSTALLED_APPS`; the adapter's own pin is not a declaration.
 
 ## INSTALLED_APPS
 
@@ -47,6 +47,14 @@ RQ_QUEUES = {
 # reads it from settings.RQ. Missing this, rqworker falls back to rq.job.Job
 # and every task raises `'Task' object is not callable`.
 RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
+```
+
+## Test settings
+
+The eager backend in `config/settings/test.py` comes from the backport too:
+
+```python
+TASKS = {"default": {"BACKEND": "django_tasks.backends.immediate.ImmediateBackend"}}
 ```
 
 ## URLs

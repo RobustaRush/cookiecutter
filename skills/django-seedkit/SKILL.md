@@ -181,7 +181,7 @@ Each rule has a *why* so you can judge edge cases.
 
 - Set `requires-python = ">=3.12"` in `pyproject.toml` immediately after `uv init`, before the first `uv add`. The host-derived pin (`>=3.14` on recent machines) refuses Django 6.
 - After inserting the env-driven `DATABASES = {...}` line in `references/new-project.md` (Option A in `settings.py`, Option B in `base.py`), **delete** the original hardcoded `DATABASES` block + `# Database` comment that `startproject` emitted. Bottom wins; leaving both makes `DATABASE_URL` dead code.
-- After `startapp <name>`, if Ruff is enabled, run `uv run ruff check --fix .` — `startapp` ships `admin.py` / `views.py` / `tests.py` with stub imports that fail `F401`.
+- After `startapp <name>`, if Ruff is enabled, run `uv run ruff check --fix . && uv run ruff format .`, in that order — `startapp` ships `admin.py` / `views.py` / `tests.py` with stub imports that fail `F401`, and dropping an import leaves a blank first line only the formatter clears. Verify with `uv run ruff format --check .`; `ruff check` alone reports those files clean.
 - Run `startapp <name>` **before** adding `<name>` to `INSTALLED_APPS`. `manage.py startapp` imports settings; if the app is already listed but the directory doesn't exist, the import fails with `ModuleNotFoundError`. Same for any package a settings block references (e.g. `orbit.handlers.OrbitLogHandler` in `LOGGING`) — `uv add` it before the next `startapp` runs, or that import fails too.
 - If i18n = no, remove the `USE_I18N = True` line and the `# Internationalization` comment block that `startproject` emits. Harmless to leave, but the reference's settings are single-language by default and the orphan block invites confusion.
 
