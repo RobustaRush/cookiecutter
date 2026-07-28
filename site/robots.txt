@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://django-seedkit.viewflow.io/sitemap.xml
