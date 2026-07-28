@@ -58,7 +58,7 @@ Four project specs, each generated twice: once with seedkit, once from the ident
 
 **And it costs less rework.** Holding the model fixed, the same prompt took 16 in-flight self-repairs without the skill and 8 with. On the shop scenario, Opus needed 12 repairs to reach the 8/8 that seedkit reached in 2.
 
-One run per cell, four scenarios, Claude models only — enough to show a gap this size, not enough to rank models. [Every generated project and every log is published.](https://github.com/viewflow/seedkit-examples)
+One run per cell, four scenarios, Claude models only — enough to show a gap this size, not enough to rank models. [Every generated project is published, both arms.](https://github.com/viewflow/seedkit-examples)
 
 ## Install
 
