@@ -9,6 +9,7 @@ Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One 
 - `README.md` — titled "Django Seedkit", and a new "Does it help? We measured it" section: four specs generated with the skill on Sonnet and without it on Sonnet, Opus and Fable, graded on the eight arm-neutral checks.
 
 ### Fixed
+- `dev-tools.md` — django-orbit installs as `django-orbit[mcp]`, and the MCP server config is a project-root `.mcp.json` instead of a snippet for one developer's Claude Desktop file. Asking for orbit "with MCP" produced a project with no MCP surface at all: the agent took the plain install line, and the config it was pointed at lives outside the scaffold.
 - `auth.md` — the `django-mail-auth` EmailUser route registers a local `MailAuthUserConfig` pinning `default_auto_field` to `AutoField`. The package's own `AppConfig` leaves it unset, so it picked up the project's `BigAutoField`, and every `migrate` warned about unapplied changes while `makemigrations` wrote a migration into `.venv/` and CI's `makemigrations --check` failed.
 - `dev-tools.md` — the `django-browser-reload` URL include is gated on `"django_browser_reload" in settings.INSTALLED_APPS` instead of `settings.DEBUG`. The Dockerfile's collectstatic step runs production settings with `DJANGO_DEBUG=True`, where the dev-only package isn't installed, so the old guard broke the image build with `ModuleNotFoundError`.
 - `rest-modern-rest.md` — the install line now pins `django-modern-rest==0.11.0` and adds `pyjwt[crypto]`. 0.11.0's throttling module imports `jwt` unconditionally, so `manage.py check` died with `ModuleNotFoundError: No module named 'jwt'` on a project that never asked for JWT auth.
@@ -154,46 +155,3 @@ Full line-by-line audit of the remaining 43 references (previously checked only 
 
 ### Changed
 - Version refresh (all pins verified current 2026-07-04): base images `bookworm`/3.12 → `trixie`/3.13 across docker / rest-bolt / devcontainer / prose (trixie's `postgresql-client` 17 also fixes the pg_dump mismatch against `postgres:17`); `redis:7` → `redis:8`; Litestream 0.3.13 → 0.5.13 (new asset naming `linux-x86_64`, singular `replica:` config); `uvicorn.workers.UvicornWorker` (deprecated) → `uvicorn-worker` package; `checkout@v7`, `setup-uv@v8.2.0` (immutable — pin exact), `build-push-action@v7`, `codecov-action@v7`, `appleboy/ssh-action` SHA-pin placeholder; pre-commit revs bumped + `ruff` hook id → `ruff-check` + "run `pre-commit autoupdate` after writing the config"; DaisyUI downloads pinned to a versioned release URL; Tailwind CLI example 4.3.2; python pins 3.12 → 3.13 (mise, uv examples). New SKILL.md "Version pins" pitfall: resolve current releases at generation time instead of trusting reference pins.
-
-## 26.21.1 — 2026-05-18
-
-### Fixed
-- `references/rest-bolt.md` — document all three `runbolt` discovery paths (explicit `BOLT_API`, project-level `config/api.py`, per-app). Default to project-level so an `api/` app isn't auto-created for stateless API surfaces; per-app stays the right choice once the API grows models/admin/migrations.
-
-## 26.20.5 — 2026-05-15
-
-### Fixed
-- `testcases/04-media-vault.md` — align assertions with the storage-s3 reference: drop the stale `.dockerignore` requirement (deploy=none has no Dockerfile) and rename the expected MinIO volume `minio-data` → `miniodata`.
-- `references/analytics.md` + `references/csp.md` — GA4 inline init `<script>` carries `nonce="{{ request.csp_nonce }}"` so the snippet survives the CSP policy (no `'unsafe-inline'` in `script-src`).
-- `references/ci.md` — list `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `DBBACKUP_BUCKET` placeholders so `check --deploy` against `production` doesn't crash when `django-dbbackup` is wired. `testcases/09-internal-ops.md` CI env assertion updated to match (dropped stray `EMAIL_URL` requirement for the email=none path).
-- `references/docker.md` + `references/storage-s3.md` + `references/email.md` — clean up `npx dclint` on the dev compose: add `name:` placeholder, reorder service keys to `image → volumes → environment → ports → command → healthcheck`, bind MinIO `9000`/`9001` to `127.0.0.1`, sort Mailpit ports alphabetically. `minio/minio` and `axllent/mailpit` stay on `:latest` — dev-only services, pin churn not worth it.
-
-## 26.20.3 — 2026-05-13
-
-### Added
-- `skills/seedkit-slim/references/django-allauth.md` — modern `ACCOUNT_LOGIN_METHODS` / `ACCOUNT_SIGNUP_FIELDS` keys (allauth 0.65+) plus URL wiring for `allauth.mfa.urls`. Slim runs were emitting deprecated `ACCOUNT_AUTHENTICATION_METHOD` / `ACCOUNT_EMAIL_REQUIRED` / `ACCOUNT_USERNAME_REQUIRED` and getting startup warnings.
-- `skills/seedkit-slim/references/new-project.md` — foundation snippets for §1 (settings with `DJANGO_*` env vars + `env.NOTSET` prod guards, `/` → `/admin/` redirect in `config/urls.py`, `.gitignore` contents, `django>=6.0,<7.0` pin, boot check using `--noreload`). Slim runs were missing all of these.
-- `skills/seedkit-slim/references/django-mail-auth.md` — app label is `mailauth` (not `mail_auth`), backend `mailauth.backends.MailAuthBackend`, requires `django.contrib.sites` + `SITE_ID`, and ships no templates — `registration/login.html` + `registration/login_requested.html` must be scaffolded or `accounts/login/` returns 500.
-- `skills/seedkit-slim/references/django-tasks-rq.md` — backend module is `django_tasks_rq.backend` (singular), `django_rq` must be in `INSTALLED_APPS` for its migrations, plus the `RQ = {"JOB_CLASS": "django_tasks_rq.Job"}` setting.
-- `skills/seedkit-slim/references/django-modern-rest.md` — `pyjwt` is an implicit dep (imported unconditionally) and router-mount wiring for `config/urls.py`.
-- `skills/seedkit-slim/references/pyright.md` — `djangoSettingsModule` belongs under `[tool.django-stubs]`, not `[tool.pyright]`; channels `as_asgi()` needs `# type: ignore[arg-type]` in `path()`.
-- `skills/seedkit-slim/references/django-orbit.md` and `references/mailpit.md` — debug-only gating for orbit (app, middleware at index 1, URL mount, logging handler all inside `if DEBUG:`) and Mailpit compose with loopback-only port binds + `EMAIL_URL` wiring. Without these the slim agent shipped orbit in INSTALLED_APPS unconditionally and bound 1025/8025 to all interfaces.
-- `skills/seedkit-slim/references/django-tasks-db.md`, `django-zeal.md`, `django-migration-linter.md` — DB backend ships as the separate `django-tasks-db` package (`django_tasks_db.backend.DatabaseBackend`); zeal 2.x middleware is the lowercase function `zeal.middleware.zeal_middleware`; `lintmigrations` needs `django_migration_linter` in `INSTALLED_APPS` plus `MIGRATION_LINTER_OPTIONS.exclude_apps` for third-party migrations.
-- `skills/seedkit-slim/references/healthcheck.md`, `django-axes.md`, `django-bolt.md` — trivial `/healthz` + `/readyz` views (avoid pulling `django-health-check`, whose v4 `INSTALLED_APPS` shape broke slim runs); axes v8 wiring without the removed `AXES_LOCKOUT_CALLABLE`; bolt `urls_bolt.py` needs `urlpatterns: list = []` and the builder stage needs `build-essential pkg-config` for the aarch64-linux source build. `pyright.md` notes `user.pk` (django-stubs has no `User.id`).
-
-### Changed
-- `new-project.md` directs dev tools through `uv add --group dev` (PEP 735 `[dependency-groups]`). The old `[tool.uv] dev-dependencies` table is deprecated in uv 0.11+.
-- `new-project.md` runs `uv python pin 3.12` right after `uv init --bare` so the project doesn't inherit a host 3.14 prerelease.
-
-### Added
-- `skills/seedkit-slim/references/django-csp.md` — django-csp 4.0+ uses the nested `CONTENT_SECURITY_POLICY = {"DIRECTIVES": {…}}` shape; the legacy flat `CSP_*` keys raise `csp.E001` at startup.
-
-### Fixed
-- `django-tasks-db.md` backend path is `django_tasks_db.DatabaseBackend` (no `.backend.` infix) — the previous snippet raised `ImportError` on boot.
-- `new-project.md` boot check runs `makemigrations` before the first `migrate` so the §1.6 custom `AUTH_USER_MODEL` doesn't abort the initial `migrate`.
-- `new-project.md` appends `[tool.uv] package = false` to `pyproject.toml` right after `uv init --bare`. Django apps aren't installable; without this, `uv sync` invoked hatchling and failed mid-foundation.
-- `new-project.md` settings snippet guards `environ.Env.read_env()` with `if _env_file.exists()`. Docker images have no `.env` and bare `read_env()` raised `FileNotFoundError` during `collectstatic`.
-
-### Changed
-- Testcase Prompt blocks no longer name specific reference files for the agent to read (`references/docker.md`, `references/realtime.md`, `references/database.md`, `references/email.md`). The skill picks references itself; prompts only state the requirement. Touched 02-shop, 03-jobs-board, 04-media-vault, 07-saas, 09-internal-ops.
-

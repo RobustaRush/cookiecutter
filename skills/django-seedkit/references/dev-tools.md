@@ -23,14 +23,10 @@ Dashboard at `/orbit/`. Per-request event correlation via `family_hash`. Dev-onl
 #### Install
 
 ```sh
-uv add --dev django-orbit
-```
-
-With MCP support (so AI assistants can query live telemetry):
-
-```sh
 uv add --dev "django-orbit[mcp]"
 ```
+
+The `[mcp]` extra ships the `orbit_mcp` server so AI assistants can query live telemetry. Drop it (`uv add --dev django-orbit`) only when MCP was declined.
 
 #### Settings
 
@@ -98,9 +94,9 @@ LOGGING["root"]["level"] = "DEBUG"
 
 Single-file layout: keep the baseline at module scope, then guard only the orbit-handler append with `if DEBUG:`.
 
-#### MCP — AI assistant integration (optional)
+#### MCP — AI assistant integration
 
-`claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/`):
+Write `.mcp.json` at the project root, so the server ships with the project instead of living in one developer's machine config:
 
 ```json
 {
@@ -108,12 +104,13 @@ Single-file layout: keep the baseline at module scope, then guard only the orbit
     "django-orbit": {
       "command": "uv",
       "args": ["run", "manage.py", "orbit_mcp"],
-      "cwd": "/path/to/project",
-      "env": {"DJANGO_SETTINGS_MODULE": "config.settings.local"}   # single-file layout: "config.settings"
+      "env": {"DJANGO_SETTINGS_MODULE": "config.settings"}
     }
   }
 }
 ```
+
+Split layout: `"config.settings.local"`.
 
 Tools: recent requests, slow queries, exceptions, N+1 patterns, keyword search, performance stats.
 
