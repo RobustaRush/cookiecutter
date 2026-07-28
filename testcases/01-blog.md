@@ -20,8 +20,10 @@ Internationalisation (i18n): no.
 Custom user model: no.
 Auth add-on: none (vanilla `django.contrib.auth`).
 Structured logging: no.
-Task runner: none.
+Task runner (mise / just / make / poe): none.
 Add-ons:
+  - Cache backend: none.
+  - Background tasks: none.
   - email: console backend (`EMAIL_URL=consolemail://`).
   - HTML email base template: no.
   - CORS: no.
