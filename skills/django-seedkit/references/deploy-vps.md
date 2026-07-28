@@ -88,7 +88,12 @@ DJANGO_SETTINGS_MODULE=config.settings.production   # the rqworker / db_worker
                                                     # with NO security hardening.
 DJANGO_SECRET_KEY=
 DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=example.com,localhost,127.0.0.1   # localhost/127.0.0.1 for the in-container healthcheck
+DJANGO_ALLOWED_HOSTS=example.com,localhost,127.0.0.1,web   # localhost/127.0.0.1 for the
+                                                    # in-container healthcheck; `web` for Caddy's
+                                                    # active probe, which dials the upstream and
+                                                    # sends `Host: web:8000`. Drop it and Django
+                                                    # answers 400, Caddy flags the only upstream
+                                                    # down, and every request gets 502.
 DJANGO_CSRF_TRUSTED_ORIGINS=https://example.com
 DJANGO_BEHIND_PROXY=True            # Caddy terminates TLS; required for
                                     # SECURE_SSL_REDIRECT to work right.

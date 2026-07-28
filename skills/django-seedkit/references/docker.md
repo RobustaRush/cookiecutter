@@ -173,5 +173,16 @@ docker compose -f deploy/docker-compose.prod.yml run --rm web python manage.py m
 ### Pitfalls
 
 - **Image tag mismatch.** Builder and runtime must share the same `python3.X` tag **and the same Debian suite** (both `trixie`, or both `bookworm`). The Python tag must match `requires-python` — `uv sync --frozen` refuses to install otherwise. A newer-suite builder with an older-suite runtime fails later, at import time, with `GLIBC_x.xx not found` on any compiled wheel.
+- **Bookworm runtime against `postgres:17`.** Bookworm's apt only carries the major-15 client, so `pg_dump` aborts on "server version mismatch". Add the PGDG repo in the runtime stage instead of the plain `postgresql-client` line:
+  ```dockerfile
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+      wget gnupg ca-certificates \
+      && install -d /usr/share/postgresql-common/pgdg \
+      && wget --quiet -O /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+      && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+      && apt-get update && apt-get install -y --no-install-recommends postgresql-client-17 \
+      && apt-get purge -y --auto-remove wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+  ```
 - **`uv sync` hardlink warnings.** `UV_LINK_MODE=copy` (set in the Dockerfile) silences them.
 - **`Ignoring existing virtual environment linked to non-existent Python interpreter`.** A host `.venv` slipped into the image build (missing `.dockerignore` entry). Add `.venv` to `.dockerignore` and `docker build --no-cache`.

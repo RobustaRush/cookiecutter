@@ -27,3 +27,14 @@ class MyappConfig(AppConfig):
 ```
 
 When the project already has a domain app, add `<app>/tasks.py` with `@task`-decorated functions. On a fresh project with no app yet, the worker boots and idles — the user creates an app and adds `tasks.py` when they have real work.
+
+## Result status
+
+```python
+from django.tasks import TaskResultStatus   # `django_tasks` on the backport
+
+result = greet.enqueue("world")
+assert result.status == TaskResultStatus.SUCCESSFUL
+```
+
+The members are `READY`, `RUNNING`, `SUCCESSFUL`, `FAILED`.
