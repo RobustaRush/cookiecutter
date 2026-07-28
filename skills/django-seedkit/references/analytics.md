@@ -215,4 +215,4 @@ SaaS, US-hosted. Cookies required. **EU users need a consent banner before loadi
 </script>
 ```
 
-The `nonce="{{ request.csp_nonce }}"` is required when `references/csp.md` is active — `script-src` has no `'unsafe-inline'`, so the inline init block is blocked without a nonce. The attribute is harmless when CSP is off (browsers ignore unknown nonces).
+The `nonce="{{ request.csp_nonce }}"` is required when `references/csp.md` is active — `script-src` has no `'unsafe-inline'`, so the inline init block is blocked without a nonce. Pair it with the `NONCE` sentinel in `script-src` (`references/csp.md`); the template attribute alone leaves the header without a nonce. The attribute is harmless when CSP is off (browsers ignore unknown nonces).

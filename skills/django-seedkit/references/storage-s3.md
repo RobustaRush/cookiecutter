@@ -176,7 +176,9 @@ Enable versioning on the media bucket (provider console or `aws s3api put-bucket
 [deploy]
   # `python` not `uv run`: the multi-stage runtime image (python:3.X-slim-trixie)
   # has no uv binary — only the venv at /opt/venv with /opt/venv/bin on PATH.
-  release_command = "python manage.py migrate && python manage.py collectstatic --noinput"
+  # `sh -c` because the release machine execs the argv directly: the Dockerfile
+  # declares no ENTRYPOINT, so a bare `&&` arrives as a manage.py app label.
+  release_command = "sh -c 'python manage.py migrate && python manage.py collectstatic --noinput'"
 ```
 
 ## Managed — Railway / Render

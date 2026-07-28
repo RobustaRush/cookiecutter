@@ -43,10 +43,12 @@ Append every listed host to every listed directive when the corresponding add-on
 | `django-allauth` social providers | `connect-src`, `img-src` | provider domains (Google: `accounts.google.com`, etc.) |
 | `analytics-ga4` | `script-src`, `connect-src`, `img-src` | `https://www.googletagmanager.com`, `https://www.google-analytics.com` |
 
-GA4 expanded — both hosts go into all three directives:
+GA4 expanded — both hosts go into all three directives, and `script-src` also takes the `NONCE` sentinel for the inline `gtag('config', ...)` block (see below):
 
 ```python
-'script-src':  ("'self'", "https://www.googletagmanager.com", "https://www.google-analytics.com"),
+from csp.constants import NONCE
+
+'script-src':  ("'self'", NONCE, "https://www.googletagmanager.com", "https://www.google-analytics.com"),
 'connect-src': ("'self'", "https://www.googletagmanager.com", "https://www.google-analytics.com"),
 'img-src':     ("'self'", 'data:', "https://www.googletagmanager.com", "https://www.google-analytics.com"),
 ```
@@ -74,7 +76,20 @@ Don't speculatively add hosts — only when the matching add-on is in scope.
 
 ## Inline scripts: use a nonce, not `'unsafe-inline'`
 
-Third-party snippets that need an inline init block (GA4 `gtag('config', ...)`, etc.) should carry `nonce="{{ request.csp_nonce }}"`. django-csp injects a fresh `'nonce-...'` into `script-src` per response whenever the template renders `request.csp_nonce` — no extra config needed.
+Third-party snippets that need an inline init block (GA4 `gtag('config', ...)`, etc.) carry `nonce="{{ request.csp_nonce }}"` in the template, and the matching directive carries the `NONCE` sentinel:
+
+```python
+from csp.constants import NONCE
+
+CONTENT_SECURITY_POLICY = {
+    'DIRECTIVES': {
+        # ...
+        'script-src': ("'self'", NONCE),
+    },
+}
+```
+
+django-csp swaps `NONCE` for a fresh `'nonce-...'` per response. Without the sentinel the template still renders a nonce and the header carries none, so the browser refuses the inline block.
 
 ## Report-Only first
 
