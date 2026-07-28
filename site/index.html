@@ -419,19 +419,27 @@ document.documentElement.className =
 <hr class="rule">
 
 <section>
-  <p class="kicker">Why a skill and not a template</p>
-  <h2>The model's Django knowledge is one or two years old</h2>
+  <p class="kicker">Why a skill and not a prompt</p>
+  <h2>A prompt cannot add what the model does not know</h2>
   <p class="lede">
+    The model writes Django from memory, and that memory is one or two years old.
     So it writes an authentication setting that Django deprecated, or last year's
-    Stripe webhook. Or it opens the database port to the local network. Seedkit keeps
-    today's answer in a
-    <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference file</a>,
-    and the model copies from there.
+    Stripe webhook. Or it opens the database port to the local network. A longer
+    prompt does not repair this, because the knowledge is not there to start with.
   </p>
   <div class="steps">
     <div class="step">
-      <p><strong>We write each reference file from the package documentation.</strong>
-      One file for each subject: authentication, payments, storage, deploy.</p>
+      <p><strong>A
+      <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference file</a>
+      cuts the package documentation down to what the model does not know.</strong>
+      Today's setting names, today's package names. One file for each subject:
+      authentication, payments, storage, deploy.</p>
+    </div>
+    <div class="step">
+      <p><strong>The same files record the option that works.</strong>
+      Which package locks an account after failed logins? Which settings does a
+      production deploy need? The skill proposes an answer. You do not have to know
+      that the question exists.</p>
     </div>
     <div class="step">
       <p><strong>Nine scenarios test the files from end to end.</strong>
