@@ -227,7 +227,10 @@ if DEBUG:
 ### URLs
 
 ```python
-if settings.DEBUG:
+# Gate on the app, not on DEBUG: the Dockerfile build runs collectstatic with
+# DJANGO_DEBUG=True against production settings, where the dev-only package is
+# absent (`uv sync --no-dev`) — a bare `if settings.DEBUG` import crashes it.
+if "django_browser_reload" in settings.INSTALLED_APPS:
     from django.urls import include, path
     urlpatterns += [path("__reload__/", include("django_browser_reload.urls"))]
 ```
