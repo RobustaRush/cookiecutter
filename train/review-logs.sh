@@ -96,9 +96,16 @@ if ! git -C "$REPO" diff-index --quiet HEAD --; then
     echo "seedkit submodule has uncommitted changes — commit or stash first" >&2
     exit 1
 fi
-if ! git -C "$PARENT" diff-index --quiet HEAD -- seedkit; then
-    echo "parent repo has uncommitted seedkit pointer drift — bump or stash first" >&2
-    exit 1
+# $PARENT is only a repo when this checkout is a submodule of one. A
+# standalone clone has an ordinary directory above it, and `diff-index`
+# there exits 128 — indistinguishable from drift unless we ask first.
+PARENT_IS_REPO=0
+if git -C "$PARENT" rev-parse --git-dir >/dev/null 2>&1; then
+    PARENT_IS_REPO=1
+    if ! git -C "$PARENT" diff-index --quiet HEAD -- seedkit; then
+        echo "parent repo has uncommitted seedkit pointer drift — bump or stash first" >&2
+        exit 1
+    fi
 fi
 
 # The agent receives this as a single prompt. LOGPATH and TODAY are
@@ -142,7 +149,17 @@ Workflow:
    # If deploy=vps or github-ssh, README's ## Deploy block must run migrate before `compose up -d`
    grep -A20 '^## Deploy' README.md 2>/dev/null | grep -B2 'compose up -d' | grep -q migrate \
      || echo "CHECK: README ## Deploy may be missing pre-up migrate step (skip if deploy=none/managed)"
+
+   # The project's own linter, when it configured one. Every check above is a
+   # grep, and a grep cannot see formatting: 04-media-vault shipped 8
+   # unformatted files while scoring 8/8. Run only what the project opted into.
+   grep -q '\[tool.ruff\]' pyproject.toml 2>/dev/null \
+     && { uv run ruff check . ; uv run ruff format --check . ; }
    ```
+
+   The log's closing `FIXES n` block is the densest evidence in the file. Each
+   `FIX` line is a repair the build agent made to its own output, so it names a
+   reference that was wrong in the agent's own words. Read those first.
 
    Skip:
    - Agent improvisations against strict testcase assertions (e.g. agent put healthchecks in `api/views.py` when the skill allows any registered app).
@@ -159,8 +176,8 @@ Workflow:
    - `__REPO__/skills/django-seedkit/SKILL.md` frontmatter → set `version: __TODAY__`.
 5. Update `__REPO__/CHANGELOG.md`: if a `## __TODAY__ — ` section already exists, extend the matching Keep-a-Changelog bullet (`### Added` / `### Changed` / `### Fixed` / `### Removed`) in place; otherwise insert a new section at the top under the `# Changelog` heading. One short, high-level, user-facing bullet per theme — never one bullet per edit. If CHANGELOG.md exceeds 200 lines after the edit, trim the oldest sections at the bottom to bring it near 150 lines.
 6. Inside `__REPO__/`: `git add -A`, commit, and `git push origin main`. Use the host gitconfig — never pass `--author` or `-c user.email`.
-7. Inside `__PARENT__/`: `git add seedkit`, commit `chore: bump seedkit/ — <one-line reason>`, push. Skip steps 6–7 if no edits were made.
-8. `rm` the log file at LOGPATH (it's gitignored — plain `rm`, not `git rm`).
+7. Inside `__PARENT__/`: `git add seedkit`, commit `chore: bump seedkit/ — <one-line reason>`, push. Skip steps 6–7 if no edits were made. __PARENT_STEP__
+8. Leave the log file alone — this script archives it after you return.
 9. Final line: `[<log basename>] <one sentence outcome>`.
 
 Hard constraints:
@@ -171,6 +188,14 @@ Hard constraints:
 EOF
 TODAY_VER=$(date +%y.%V.%u)
 WORKSPACE_DIR="${WORKSPACE:-$PARENT/seedkit-examples}"
+# A standalone clone has no parent repo to bump. Say so in the prompt rather
+# than letting the agent discover it as a git error and improvise around it.
+if [[ $PARENT_IS_REPO -eq 1 ]]; then
+    PARENT_STEP=""
+else
+    PARENT_STEP="SKIP STEP 7 ENTIRELY — \`__PARENT__\` is not a git repository (this is a standalone clone, not a submodule checkout). Do not run git there."
+fi
+PROMPT_TEMPLATE="${PROMPT_TEMPLATE//__PARENT_STEP__/$PARENT_STEP}"
 PROMPT_TEMPLATE="${PROMPT_TEMPLATE//__TODAY__/$TODAY_VER}"
 PROMPT_TEMPLATE="${PROMPT_TEMPLATE//__REPO__/$REPO}"
 PROMPT_TEMPLATE="${PROMPT_TEMPLATE//__PARENT__/$PARENT}"
@@ -206,6 +231,18 @@ for log in "${LOGS[@]}"; do
     rc=$RUN_WATCHED_RC
 
     duration=$(( $(date +%s) - start ))
+
+    # Archive rather than delete, and only on a clean exit. A reviewed log is
+    # the sole record of how a published result was produced — logs/ is
+    # gitignored, so an `rm` here is the last copy. reviewed/ sits outside the
+    # non-recursive logs/*.log glob, so an archived log is not re-reviewed.
+    if [[ $rc -eq 0 && -f "$log" ]]; then
+        mkdir -p "$LOGS_DIR/reviewed"
+        mv "$log" "$LOGS_DIR/reviewed/$name" && echo "    archived: reviewed/$name"
+    elif [[ -f "$log" ]]; then
+        echo "    kept in place (exit $rc) — rerun to retry this log"
+    fi
+
     printf '    done: exit=%s duration=%ss [%d/%d]\n' "$rc" "$duration" "$idx" "$total"
     RESULTS+=("$(printf 'exit=%-3s %5ss  %s' "$rc" "$duration" "$name")")
 done

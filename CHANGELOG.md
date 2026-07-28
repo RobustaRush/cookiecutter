@@ -8,6 +8,11 @@ Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One 
 - The skill is now `django-seedkit` — invoke it as `/django-seedkit`. `skills/seedkit/` moved to `skills/django-seedkit/`, and the harness symlinks, testcase prompts and demo tape follow. The repo, the marketplace and the plugin keep the name `seedkit`, so `/plugin install seedkit@viewflow` and `npx skills add viewflow/seedkit` are unchanged and existing installs keep working.
 - `README.md` — titled "Django Seedkit", and a new "Does it help? We measured it" section: four specs generated with the skill on Sonnet and without it on Sonnet, Opus and Fable, graded on the eight arm-neutral checks.
 
+### Fixed
+- `review-logs.sh` refused to start on a standalone clone. Its parent-pointer precondition read `diff-index`'s exit 128 ("not a git repository") as pointer drift, so the only way past it was to stash work that didn't exist. It now tests for a repo first and, when there isn't one, tells the reviewer to skip the parent-bump step instead of leaving it to hit the error mid-run.
+- `review-logs.sh` archives each reviewed log to `logs/reviewed/` instead of deleting it, and only on a clean exit — a failed review keeps its log for the retry. `logs/` is gitignored, so the `rm` was destroying the only record of how a published result was produced.
+- `review-logs.sh`'s defect checklist runs `ruff check` and `ruff format --check` when the project configured Ruff. Every other item is a grep, and a grep cannot see formatting — `04-media-vault` shipped 8 unformatted files while scoring 8/8. The prompt also points the reviewer at the log's closing `FIXES` block first, where the build agent names in its own words each reference it had to work around.
+
 ## 26.31.1 — 2026-07-27
 
 ### Fixed
