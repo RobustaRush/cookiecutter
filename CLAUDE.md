@@ -49,7 +49,12 @@ Each reference is a paste-ready snippet plus the minimum prose needed to use it 
 
 ## Changelog
 
-`seedkit/CHANGELOG.md` tracks user-facing changes. Versions are dated `YY.WW.D` — `date +%y.%V.%u` — one section per day; all of a day's commits collapse into one block. After every skill edit, append (or extend) one short bullet under today's section using Keep-a-Changelog headings (`Added` / `Changed` / `Fixed` / `Removed`). Batch related fixes into a single bullet. Bump `version` to the same date string in both `.claude-plugin/plugin.json` and `skills/django-seedkit/SKILL.md` frontmatter. If `CHANGELOG.md` exceeds ~200 lines, trim the oldest sections — git keeps the rest. `train/review-logs.sh` does this inline per log iteration — version bump + changelog edit happen in the same commit as the reference fix.
+`seedkit/CHANGELOG.md` is read by people who installed the skill and want to know what changed **in
+the skill**. Only `skills/` earns an entry: `SKILL.md`, the references, the questionnaire. Nothing else
+does — not `site/`, not `README.md`, not `docs/`, not `ansible/`, not this file. Harness and testcase
+work goes under its own `### Testcases and harness` heading, below the user-facing ones, or nowhere.
+
+Versions are dated `YY.WW.D` — `date +%y.%V.%u` — one section per day; all of a day's commits collapse into one block. After every skill edit, append (or extend) one short bullet under today's section using Keep-a-Changelog headings (`Added` / `Changed` / `Fixed` / `Removed`). Batch related fixes into a single bullet. Bump `version` to the same date string in both `.claude-plugin/plugin.json` and `skills/django-seedkit/SKILL.md` frontmatter. If `CHANGELOG.md` exceeds ~200 lines, trim the oldest sections — git keeps the rest. `train/review-logs.sh` does this inline per log iteration — version bump + changelog edit happen in the same commit as the reference fix.
 
 ## Maintaining testcases
 

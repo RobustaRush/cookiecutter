@@ -2,26 +2,11 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
-## 26.31.3 — 2026-07-29
-
-### Added
-- A blog at <https://django-seedkit.viewflow.io/blog/>, linked from the landing page's header and footer. Five articles to start: magic-link login, Stripe Checkout, Celery on Redis, Tailwind without Node, brute-force lockout. One article per integration *aspect* rather than per reference file — a reference covers a whole topic and often two mutually exclusive packages, so a page per file would sprawl and rank for nothing. Each article shows the least wiring that works and then the failure the test loop found, and links the reference on GitHub instead of copying its snippets. `docs/articles-plan.md` holds the backlog (~110 articles read off the references' real section structure), the format rules, and what stays unpublished. `ansible/deploy.yml` smoke-tests every article URL — the playbook passed green on a 404 before, since it only checked `/`, `robots.txt` and `sitemap.xml`.
-
-### Changed
-- Blog prose now follows the **ASD-STE100** Simplified Technical English writing rules: sentences capped at 25 words (20 for an instruction), active voice, imperative instructions, no `-ing` verb forms, no contractions, no idiom, and the failure named before the fix in every `.gotcha`. Applies to the whole page — lede, body, CTA, `<meta description>`, `og:description`, JSON-LD — not the body only, since a search result shows the meta text. `docs/articles-plan.md` records the numeric limits, the scope, and which nabokov cadence rules STE overrides, because a rhythm pass would otherwise undo it. Two titles change with it: not every article is a "How to", and the plan doc now lists the five title forms and when each applies. Dropped the "more guides are in progress" block from the blog index — a page should not promise articles that do not exist.
-- `README.md` opens with what the skill is: an agent skill to start new Django projects, or extend the one you already have.
-- The landing page shrinks its hero buttons on screens under 600px — `size="l"` is 6rem tall, which filled a phone screen — and carries the [Django Webring](https://djangowebring.com) widget above the footer. The site is now verified in Google Search Console and Bing Webmaster Tools, with `sitemap.xml` submitted to both.
-
 ## 26.31.2 — 2026-07-28
-
-### Added
-- `train/run-reproduce.sh` — a third grading phase, arm-neutral: hand a fresh agent a `git archive` of a published project and ask it to get that project running from the README alone. Every existing grader decides by reading files, and structure is what the skill is reliably best at, so both sit at their maximum — 8/8 in every scored case, and the per-case `## Review` has never flagged an issue across 17 logs. This asks what neither can: whether the artefact works for someone who wasn't there when it was built. Reports `REPRODUCE PASS|FAIL|BLOCKED` plus one `GAP` line per thing the README should have said, into `reproduce-<cli>.tsv`.
 
 ### Changed
 - The skill is now `django-seedkit` — invoke it as `/django-seedkit`. `skills/seedkit/` moved to `skills/django-seedkit/`, and the harness symlinks, testcase prompts and demo tape follow. The repo, the marketplace and the plugin keep the name `seedkit`, so `/plugin install seedkit@viewflow` and `npx skills add viewflow/seedkit` are unchanged and existing installs keep working.
 - `deploy-vps.md` and `ci.md` spell out the SQLite variant of their Postgres-shaped samples — which compose services and volumes to swap, and that the CI service container goes away — so a SQLite + Litestream project doesn't have to infer them.
-- `README.md` — titled "Django Seedkit", and a new "Does it help? We measured it" section: four specs generated with the skill on Sonnet and without it on Sonnet, Opus and Fable, graded on the eight arm-neutral checks.
-- `README.md` reads as a landing page: the measured result and the install block move above the feature list, the benchmark covers all nine cases (72/72 against 54/72), and every case row links to its published project. The site at <https://django-seedkit.viewflow.io> ships the same copy.
 
 ### Fixed
 - `deploy-vps.md` — `.env.prod.example` adds `web` to `DJANGO_ALLOWED_HOSTS`. Caddy's active health check dials the upstream directly and sends `Host: web:8000`, so Django answered 400, Caddy flagged the only upstream down, and every production request got a 502.
@@ -40,6 +25,9 @@ Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One 
 - `csp.md` / `analytics.md` — a nonced inline script needs the `NONCE` sentinel in the `script-src` tuple, not just `nonce="{{ request.csp_nonce }}"` in the template. django-csp 4.0 dropped the implicit injection, so the GA4 `gtag('config', ...)` block rendered a live nonce against a header that carried none and the browser refused it — analytics never fired in production.
 - `storage-s3.md` — the Fly `release_command` that chains `migrate` and `collectstatic` wraps them in `sh -c`. The release machine execs the argv directly, so a bare `&&` reached `manage.py migrate` as an app label and failed the deploy.
 - `review-logs.sh`'s defect checklist runs `ruff check` and `ruff format --check` when the project configured Ruff. Every other item is a grep, and a grep cannot see formatting — `04-media-vault` shipped 8 unformatted files while scoring 8/8. The prompt also points the reviewer at the log's closing `FIXES` block first, where the build agent names in its own words each reference it had to work around.
+
+### Testcases and harness
+- `train/run-reproduce.sh` — a third grading phase, arm-neutral: hand a fresh agent a `git archive` of a published project and ask it to get that project running from the README alone. Every existing grader decides by reading files, and structure is what the skill is reliably best at, so both sit at their maximum — 8/8 in every scored case, and the per-case `## Review` has never flagged an issue across 17 logs. This asks what neither can: whether the artefact works for someone who wasn't there when it was built. Reports `REPRODUCE PASS|FAIL|BLOCKED` plus one `GAP` line per thing the README should have said, into `reproduce-<cli>.tsv`.
 
 ## 26.31.1 — 2026-07-27
 
