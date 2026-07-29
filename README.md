@@ -1,8 +1,8 @@
 # Django Seedkit 🌱
 
-**Current Django knowledge and best practices for coding agents.**
+**An agent skill to start new Django projects, or extend the one you already have.**
 
-Scaffold a Django project the way you need it. Tell the agent what you must build — it asks a few questions, then writes the project: packages wired together, dev and prod settings split, CI in place.
+Scaffold a Django project the way you need it. Current Django knowledge and best practices for coding agents: tell the agent what you must build — it asks a few questions, then writes the project. Packages wired together, dev and prod settings split, CI in place.
 
 [![Site](https://img.shields.io/badge/site-django--seedkit.viewflow.io-0C4B33?style=for-the-badge)](https://django-seedkit.viewflow.io)
 [![View Outputs](https://img.shields.io/badge/View%20Outputs-00C853?style=for-the-badge)](https://github.com/viewflow/seedkit-examples)

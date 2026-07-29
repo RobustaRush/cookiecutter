@@ -2,6 +2,12 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
+## 26.31.3 — 2026-07-29
+
+### Changed
+- `README.md` opens with what the skill is: an agent skill to start new Django projects, or extend the one you already have.
+- The landing page shrinks its hero buttons on screens under 600px — `size="l"` is 6rem tall, which filled a phone screen — and carries the [Django Webring](https://djangowebring.com) widget above the footer. The site is now verified in Google Search Console and Bing Webmaster Tools, with `sitemap.xml` submitted to both.
+
 ## 26.31.2 — 2026-07-28
 
 ### Added

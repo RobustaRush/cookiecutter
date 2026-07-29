@@ -361,6 +361,17 @@ document.documentElement.className =
   .faq-item p { color: var(--md-sys-color-on-surface-variant); margin: 0; }
   hr.rule { border: 0; border-top: 1px solid var(--md-sys-color-outline-variant); max-width: var(--content-w); margin: 0 auto; }
   footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; font-size: 0.85rem; color: var(--md-sys-color-on-surface-variant); }
+  .webring { max-width: var(--content-w); margin: 0 auto; padding: 0 1.5rem 2.5rem; }
+
+  /* ---------- narrow screens ---------- */
+  @media (max-width: 600px) {
+    /* the hero buttons are size="l": 6rem tall and 1.5rem type, which fills a phone screen */
+    .cta-row material-button::part(button) {
+      height: 3rem;
+      padding: 0 1.25rem;
+      font-size: 0.95rem;
+    }
+  }
 </style>
 </head>
 
@@ -655,8 +666,13 @@ claude plugin install seedkit@viewflow</pre>
   </div>
 </section>
 
+<div class="webring">
+  <webring-css site="https://django-seedkit.viewflow.io"></webring-css>
+  <script src="https://djangowebring.com/static/webring.js"></script>
+</div>
+
 <footer>
-  <span>MIT licensed · No runtime dependency · Last updated 2026-07-28</span>
+  <span>MIT licensed · No runtime dependency · Last updated 2026-07-29</span>
   <span>
     <a href="https://github.com/viewflow/seedkit" target="_blank" rel="noopener">GitHub</a> ·
     <a href="https://github.com/viewflow/seedkit-examples" target="_blank" rel="noopener">Example output</a>
