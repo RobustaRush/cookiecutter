@@ -8,11 +8,11 @@ document.documentElement.className =
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How to add magic-link login to Django — Django Seedkit</title>
-<meta name="description" content="Passwordless login in Django with django-mail-auth: install, pick a user model, order INSTALLED_APPS so the admin login is replaced, and the uniqueness trap on stock auth.User.">
+<meta name="description" content="Passwordless login in Django with django-mail-auth. Install it, choose a user model, and order INSTALLED_APPS so the admin login changes. Avoid the uniqueness trap on stock auth.User.">
 <link rel="canonical" href="https://django-seedkit.viewflow.io/blog/django-magic-link-login/">
 <meta property="og:type" content="article">
 <meta property="og:title" content="How to add magic-link login to Django">
-<meta property="og:description" content="Passwordless login in Django with django-mail-auth: install, pick a user model, order INSTALLED_APPS so the admin login is replaced, and the uniqueness trap on stock auth.User.">
+<meta property="og:description" content="Passwordless login in Django with django-mail-auth. Install it, choose a user model, and order INSTALLED_APPS so the admin login changes. Avoid the uniqueness trap on stock auth.User.">
 <meta property="og:url" content="https://django-seedkit.viewflow.io/blog/django-magic-link-login/">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/assets/blog.css">
@@ -21,7 +21,7 @@ document.documentElement.className =
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "How to add magic-link login to Django",
-  "description": "Passwordless login in Django with django-mail-auth: install, pick a user model, order INSTALLED_APPS so the admin login is replaced, and the uniqueness trap on stock auth.User.",
+  "description": "Passwordless login in Django with django-mail-auth. Install it, choose a user model, and order INSTALLED_APPS so the admin login changes. Avoid the uniqueness trap on stock auth.User.",
   "datePublished": "2026-07-29",
   "dateModified": "2026-07-29",
   "author": { "@type": "Organization", "name": "Django Seedkit" },
@@ -52,39 +52,39 @@ document.documentElement.className =
 <article>
   <p class="kicker"><a href="/blog/">Blog</a> · Auth</p>
   <h1>How to add magic-link login to Django</h1>
-  <p class="lede">The user types an email address, gets a one-time link, clicks it, and is signed in.
-  There is no reset flow to build and no social providers to register.</p>
+  <p class="lede">The user types an email address. Django sends a one-time link. The user opens the link
+  and the site starts a session. The project needs no reset flow and no social provider.</p>
 
   <p><a href="https://django-mail-auth.readthedocs.io/" target="_blank" rel="noopener">django-mail-auth</a>
-  is one small dependency that ships three pieces: <code>mailauth</code> for the backend and the
-  <code>/accounts/login/</code> views, <code>mailauth.contrib.admin</code> to put the Django admin behind
-  the same flow, and <code>mailauth.contrib.user</code> for an <code>EmailUser</code> model with no
-  password field.</p>
+  is one small dependency with three parts. <code>mailauth</code> holds the backend and the
+  <code>/accounts/login/</code> views. <code>mailauth.contrib.admin</code> puts the Django admin behind
+  the same flow. <code>mailauth.contrib.user</code> adds an <code>EmailUser</code> model with no password
+  field.</p>
 
 <pre><code>uv add django-mail-auth</code></pre>
 
   <h2>Decide the user model first</h2>
 
-  <p>This one is hard to walk back, because it lands in your first migration. Three routes: use
-  <code>mailauth.contrib.user</code> and set <code>AUTH_USER_MODEL = "mailauth_user.EmailUser"</code>;
-  write your own custom user with <code>email</code> as the <code>USERNAME_FIELD</code>; or stay on stock
-  <code>auth.User</code>.</p>
+  <p>This decision goes into the first migration, and a later change is expensive. Choose one of three options. Install <code>mailauth.contrib.user</code> and set
+  <code>AUTH_USER_MODEL = "mailauth_user.EmailUser"</code>. Write a custom user model with
+  <code>email</code> as the <code>USERNAME_FIELD</code>. Or keep the stock <code>auth.User</code>
+  model.</p>
 
   <div class="gotcha">
-    <p><strong>Stock <code>auth.User</code> is the one to avoid.</strong> Its <code>email</code> field has
-    no <code>unique=True</code>. When two rows share an address,
-    <code>MailAuthBackend.authenticate()</code> returns whichever it finds first and raises nothing. So
-    anyone who can sign up twice with someone else's address can receive a link that logs them in as that
-    user. If you must stay on stock <code>auth.User</code>, add a <code>UniqueConstraint</code> by
-    migration <em>and</em> a validator on the admin form.</p>
+    <p><strong>Two accounts with one email address can log in as each other.</strong> The
+    <code>email</code> field on stock <code>auth.User</code> has no <code>unique=True</code> constraint.
+    If two rows hold the same address, <code>MailAuthBackend.authenticate()</code> returns the first match
+    and raises no error. A second signup with another person's address then receives a valid link to that
+    account. To stay on stock <code>auth.User</code>, add a <code>UniqueConstraint</code> in a migration
+    and a validator on the admin form.</p>
   </div>
 
   <h2>Settings</h2>
 
-  <p>Edit <code>INSTALLED_APPS</code> in place here rather than appending. Django resolves admin templates
-  and the admin login view in app order, so the overriding app has to load first — put
-  <code>mailauth.contrib.admin</code> above <code>django.contrib.admin</code>. Get that backwards and the
-  stock password login stays on <code>/admin/</code> with no warning.</p>
+  <p>Edit <code>INSTALLED_APPS</code> in place. Do not append. Django resolves admin templates and the
+  admin login view in app order, so the app that overrides must load first. Put
+  <code>mailauth.contrib.admin</code> above <code>django.contrib.admin</code>. In the reverse order the
+  stock password login stays on <code>/admin/</code>, and Django gives no warning.</p>
 
 <pre><code>INSTALLED_APPS = [
     <span class="c"># ... existing entries kept ...</span>
@@ -101,23 +101,23 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = "mailauth:login"
 LOGIN_REDIRECT_URL = "/"</code></pre>
 
-  <p>Then <code>path("accounts/", include("mailauth.urls"))</code> — no <code>namespace</code> argument,
-  the package declares <code>app_name</code> itself.</p>
+  <p>Then add <code>path("accounts/", include("mailauth.urls"))</code> to the root URL configuration. Give
+  it no <code>namespace</code> argument, because the package declares <code>app_name</code> itself.</p>
 
   <h2>Templates and email</h2>
 
-  <p>The package ships the email body and subject, and expects you to supply the HTML pages:
+  <p>The package ships the email body and the subject. Supply three HTML pages:
   <code>registration/login.html</code>, <code>registration/login_requested.html</code>, and
-  <code>registration/logged_out.html</code>. It also needs a working email backend. With
-  <code>EMAIL_URL=consolemail://</code> the link prints to <code>runserver</code> output. With nothing
-  configured, Django's SMTP default points at <code>localhost:25</code>, and the login form accepts the
-  address and then nothing arrives.</p>
+  <code>registration/logged_out.html</code>. The package also needs an email backend. Set
+  <code>EMAIL_URL=consolemail://</code> and the link prints to the <code>runserver</code> output. Without
+  that setting Django uses SMTP on <code>localhost:25</code>, the login form accepts the address, and no
+  mail arrives.</p>
 
   <div class="cta">
-    <p>Or hand it to your agent, which reads the wiring above from a maintained reference file and
-    applies it to your repo:</p>
+    <p>Or give the task to an agent. It reads the same setup from a maintained reference file and applies
+    it to the repository:</p>
 <pre><code>/django-seedkit add passwordless magic-link login</code></pre>
-    <p>Full wiring, including the <code>default_auto_field</code> pin that keeps
+    <p>The reference holds the full setup, and the <code>default_auto_field</code> pin that keeps
     <code>makemigrations --check</code> green:
     <a href="https://github.com/viewflow/seedkit/blob/main/skills/django-seedkit/references/auth.md" target="_blank" rel="noopener">auth.md</a>
     · <a href="/">What Django Seedkit is</a></p>

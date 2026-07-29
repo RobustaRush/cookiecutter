@@ -8,11 +8,11 @@ document.documentElement.className =
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Django integration tips — Django Seedkit</title>
-<meta name="description" content="Short, tested how-tos for wiring packages into a Django project: auth, Stripe, Celery, Tailwind, deploy. One article per integration, each built around the thing that usually breaks.">
+<meta name="description" content="Short how-to guides for Django integrations: magic-link login, Stripe Checkout, Celery, Tailwind CSS, and login lockout. Each guide shows the setup that works and the mistake that costs an afternoon.">
 <link rel="canonical" href="https://django-seedkit.viewflow.io/blog/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Django integration tips — Django Seedkit">
-<meta property="og:description" content="Short, tested how-tos for wiring packages into a Django project: auth, Stripe, Celery, Tailwind, deploy. One article per integration, each built around the thing that usually breaks.">
+<meta property="og:description" content="Short how-to guides for Django integrations: magic-link login, Stripe Checkout, Celery, Tailwind CSS, and login lockout. Each guide shows the setup that works and the mistake that costs an afternoon.">
 <meta property="og:url" content="https://django-seedkit.viewflow.io/blog/">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/assets/blog.css">
@@ -21,7 +21,7 @@ document.documentElement.className =
   "@context": "https://schema.org",
   "@type": "Blog",
   "name": "Django integration tips",
-  "description": "Short, tested how-tos for wiring packages into a Django project.",
+  "description": "Short how-to guides for Django integrations. Each guide shows the setup that works and the mistake that costs an afternoon.",
   "url": "https://django-seedkit.viewflow.io/blog/",
   "publisher": { "@type": "Organization", "name": "Django Seedkit" }
 }
@@ -47,21 +47,20 @@ document.documentElement.className =
 <main>
   <p class="kicker">Blog</p>
   <h1>Django integration tips</h1>
-  <p class="lede">Adding Stripe, or Celery, or a login flow to a Django project. Each guide is short: the
-  setup that runs, and the mistake that costs you an afternoon.</p>
+  <p class="lede">Add Stripe, Celery, or a login flow to a Django project. Each guide is short. It shows the
+  setup that works, then the mistake that costs an afternoon.</p>
 
   <div class="group">
     <h2>Auth</h2>
     <ul class="post-list">
       <li>
         <a href="/blog/django-magic-link-login/">How to add magic-link login to Django</a>
-        <p>Passwordless sign-in with django-mail-auth, and why stock <code>auth.User</code> makes it a
-        hijack risk.</p>
+        <p>Passwordless sign-in with django-mail-auth. Stock <code>auth.User</code> makes it a hijack
+        risk.</p>
       </li>
       <li>
-        <a href="/blog/django-brute-force-lockout/">How to lock out brute-force logins in Django</a>
-        <p>Seven settings configure django-axes, and one of them turns the whole thing off if it sits in
-        the wrong place.</p>
+        <a href="/blog/django-brute-force-lockout/">Stop brute-force logins in Django with django-axes</a>
+        <p>Seven settings configure django-axes. One of them turns the lockout off in the wrong place.</p>
       </li>
     </ul>
   </div>
@@ -71,8 +70,8 @@ document.documentElement.className =
     <ul class="post-list">
       <li>
         <a href="/blog/django-stripe-checkout/">How to add Stripe Checkout to Django</a>
-        <p>Two views and one field on the user, plus the idempotency key that stops a double-click
-        creating two customers.</p>
+        <p>Two views and one field on the user model. An idempotency key prevents duplicate customers after
+        a double click.</p>
       </li>
     </ul>
   </div>
@@ -82,7 +81,8 @@ document.documentElement.className =
     <ul class="post-list">
       <li>
         <a href="/blog/django-celery-redis/">How to add Celery to Django with Redis</a>
-        <p>The app object, the two Redis databases, and the time limits Celery doesn't set for you.</p>
+        <p>Configure the app object and two Redis databases. Then set the two time limits that Celery
+        omits.</p>
       </li>
     </ul>
   </div>
@@ -91,18 +91,15 @@ document.documentElement.className =
     <h2>Frontend</h2>
     <ul class="post-list">
       <li>
-        <a href="/blog/django-tailwind-without-node/">How to use Tailwind CSS in Django without Node</a>
-        <p>The standalone binary, one template tag, and the startup error that mentions everything except
+        <a href="/blog/django-tailwind-without-node/">Tailwind CSS in Django without Node</a>
+        <p>The standalone binary and one template tag. The startup error names everything except
         Tailwind.</p>
       </li>
     </ul>
   </div>
 
-  <div class="soon">
-    <p>More on the way: REST APIs, WebSockets, S3, structured logging, CI, and deploys to a plain server
-    or to Fly. Each one comes out of a <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference file</a>
-    the skill already uses to write real projects.</p>
-  </div>
+  <p class="all-refs">All 49 <a href="https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references" target="_blank" rel="noopener">reference files</a>
+  are on GitHub, and the skill uses them to write real projects.</p>
 </main>
 
 <footer>

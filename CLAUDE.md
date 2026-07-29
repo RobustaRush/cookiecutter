@@ -22,6 +22,11 @@ article supplies exactly what the reference omits — why you'd want this, and w
 Show the minimum snippet and link the reference on GitHub for the full wiring, so the snippet has one
 canonical home.
 
+Article prose follows the **ASD-STE100** writing rules — short active one-idea sentences, no `-ing`
+verb forms, no contractions, no idiom, condition before instruction in a `.gotcha`. The limits, the
+scope, and the nabokov rules STE overrides are in `docs/articles-plan.md`, "Approved English". Titles
+are not all "How to"; the same file has the forms and when each applies.
+
 Every new article needs three companions in the same commit: a row in `site/blog/index.html`, a `<url>`
 in `site/sitemap.xml`, and a line in the blog smoke-test loop in `ansible/deploy.yml`. The deploy
 playbook passes green on a 404 unless the URL is in that loop.

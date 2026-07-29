@@ -7,12 +7,12 @@ document.documentElement.className =
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How to lock out brute-force logins in Django — Django Seedkit</title>
-<meta name="description" content="django-axes records every failed Django login and locks the attacker out after N tries. Two settings decide whether it works at all: backend order, and whether you lock on IP and username together.">
+<title>Stop brute-force logins in Django with django-axes — Django Seedkit</title>
+<meta name="description" content="django-axes records every failed Django login and locks out the source after a set number of tries. Two settings decide the result: the backend order, and the lockout parameters.">
 <link rel="canonical" href="https://django-seedkit.viewflow.io/blog/django-brute-force-lockout/">
 <meta property="og:type" content="article">
-<meta property="og:title" content="How to lock out brute-force logins in Django">
-<meta property="og:description" content="django-axes records every failed Django login and locks the attacker out after N tries. Two settings decide whether it works at all: backend order, and whether you lock on IP and username together.">
+<meta property="og:title" content="Stop brute-force logins in Django with django-axes">
+<meta property="og:description" content="django-axes records every failed Django login and locks out the source after a set number of tries. Two settings decide the result: the backend order, and the lockout parameters.">
 <meta property="og:url" content="https://django-seedkit.viewflow.io/blog/django-brute-force-lockout/">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/assets/blog.css">
@@ -20,8 +20,8 @@ document.documentElement.className =
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "How to lock out brute-force logins in Django",
-  "description": "django-axes records every failed Django login and locks the attacker out after N tries. Two settings decide whether it works at all: backend order, and whether you lock on IP and username together.",
+  "headline": "Stop brute-force logins in Django with django-axes",
+  "description": "django-axes records every failed Django login and locks out the source after a set number of tries. Two settings decide the result: the backend order, and the lockout parameters.",
   "datePublished": "2026-07-29",
   "dateModified": "2026-07-29",
   "author": { "@type": "Organization", "name": "Django Seedkit" },
@@ -51,10 +51,10 @@ document.documentElement.className =
 <main>
 <article>
   <p class="kicker"><a href="/blog/">Blog</a> · Auth</p>
-  <h1>How to lock out brute-force logins in Django</h1>
-  <p class="lede">Django counts no failed logins and rate-limits nothing. Whoever finds your login form
-  can try passwords until they run out. <code>django-axes</code> records every attempt and locks the
-  source out after a threshold.</p>
+  <h1>Stop brute-force logins in Django with django-axes</h1>
+  <p class="lede">Django counts no failed logins and limits no request rate. Anyone who finds the login form
+  can try one password after another. <code>django-axes</code> records every attempt and locks out the
+  source after a limit.</p>
 
 <pre><code>uv add django-axes</code></pre>
 
@@ -72,45 +72,44 @@ AXES_COOLOFF_TIME = 1                                <span class="c"># hours</sp
 AXES_LOCKOUT_PARAMETERS = [["ip_address", "username"]]
 AXES_RESET_ON_SUCCESS = True</code></pre>
 
-  <p>Then <code>manage.py migrate</code>: axes ships its own models to record attempts. Append to
-  <code>INSTALLED_APPS</code> and <code>MIDDLEWARE</code> rather than redeclaring them, so anything your
-  production settings add survives. <code>AxesMiddleware</code> belongs last: it wraps every other
-  middleware's authentication attempts.</p>
+  <p>Then run <code>manage.py migrate</code>, because axes ships its own models for the attempt records.
+  Append to <code>INSTALLED_APPS</code> and <code>MIDDLEWARE</code> instead of a new list, so that the
+  entries from the production settings remain. <code>AxesMiddleware</code> goes last, because it wraps the
+  authentication attempts of every other middleware.</p>
 
   <div class="gotcha">
-    <p><strong><code>AxesBackend</code> must come first.</strong> Put it after
-    <code>ModelBackend</code> and you turn lockout off: the first backend authenticates the request
-    before axes ever sees it. Nothing raises, nothing logs, and the package still shows up in
-    <code>pip list</code>. The only way to catch it is to fail six logins on purpose and watch the
-    seventh succeed.</p>
+    <p><strong><code>AxesBackend</code> after <code>ModelBackend</code> turns the lockout off.</strong> The
+    first backend authenticates the request, and axes never sees the attempt. Nothing raises an error,
+    nothing reaches the log, and <code>pip list</code> still shows the package. To find the fault, fail six
+    logins on purpose and watch the seventh attempt succeed.</p>
   </div>
 
   <h2>Lock on both, not either</h2>
 
-  <p>Note the nested list in <code>AXES_LOCKOUT_PARAMETERS</code>. Nesting means <em>and</em>: lock the
-  combination of this IP and this username. A flat <code>["ip_address", "username"]</code> means
-  <em>or</em>, meaning either one alone, and username-only lockout hands anyone a denial-of-service. They
-  submit five bad passwords for your address, and you can't log in for an hour.</p>
+  <p>Note the nested list in <code>AXES_LOCKOUT_PARAMETERS</code>. The inner list means <em>and</em>: axes
+  locks the pair of one IP address and one username. A flat list means <em>or</em>, so either value alone
+  triggers a lockout. A lockout on the username alone is a denial-of-service. An attacker submits five bad
+  passwords for one address, and the owner cannot log in for an hour.</p>
 
   <h2>Behind a proxy</h2>
 
-  <p>If Django sits behind Caddy, nginx, or a load balancer, <code>REMOTE_ADDR</code> is the proxy's
-  address on every request — so all traffic looks like one client and the IP half of the lockout stops
-  meaning anything. Install the extra and point axes at the forwarded header:</p>
+  <p>Behind Caddy, nginx, or a load balancer, <code>REMOTE_ADDR</code> holds the address of the proxy on
+  every request. All traffic then looks like one client, and the IP half of the lockout has no effect.
+  Install the extra and point axes at the forwarded header.</p>
 
 <pre><code>uv add 'django-axes[ipware]'</code></pre>
 
 <pre><code>AXES_IPWARE_PROXY_COUNT = 1
 AXES_IPWARE_META_PRECEDENCE_ORDER = ["HTTP_X_FORWARDED_FOR", "REMOTE_ADDR"]</code></pre>
 
-  <p>Check it by failing a login from a known address and reading the <code>axes_accessattempt</code>
-  table. If the IP recorded there is your proxy's, the header isn't reaching axes.</p>
+  <p>To check the result, fail a login from a known address and read the <code>axes_accessattempt</code>
+  table. If the table holds the address of the proxy, the header does not reach axes.</p>
 
   <div class="cta">
-    <p>Or hand it to your agent, which reads the wiring above from a maintained reference file and
-    applies it to your repo:</p>
+    <p>Or give the task to an agent. It reads the same setup from a maintained reference file and applies it
+    to the repository:</p>
 <pre><code>/django-seedkit add lockout on brute force</code></pre>
-    <p>Full wiring, including the Redis cache handler and authenticator-app two-factor:
+    <p>The reference holds the full setup, the Redis cache handler, and authenticator-app two-factor:
     <a href="https://github.com/viewflow/seedkit/blob/main/skills/django-seedkit/references/auth-hardening.md" target="_blank" rel="noopener">auth-hardening.md</a>
     · <a href="/">What Django Seedkit is</a></p>
   </div>

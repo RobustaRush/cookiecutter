@@ -7,12 +7,12 @@ document.documentElement.className =
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How to use Tailwind CSS in Django without Node — Django Seedkit</title>
-<meta name="description" content="Tailwind in a Django project with no Node, npm, or webpack: django-tailwind-cli downloads the standalone binary, rebuilds CSS from a management command, and serves it through one template tag.">
+<title>Tailwind CSS in Django without Node — Django Seedkit</title>
+<meta name="description" content="Use Tailwind CSS in a Django project with no Node, npm, or webpack. The django-tailwind-cli package downloads the standalone binary and rebuilds the CSS from a management command. One template tag serves it.">
 <link rel="canonical" href="https://django-seedkit.viewflow.io/blog/django-tailwind-without-node/">
 <meta property="og:type" content="article">
-<meta property="og:title" content="How to use Tailwind CSS in Django without Node">
-<meta property="og:description" content="Tailwind in a Django project with no Node, npm, or webpack: django-tailwind-cli downloads the standalone binary, rebuilds CSS from a management command, and serves it through one template tag.">
+<meta property="og:title" content="Tailwind CSS in Django without Node">
+<meta property="og:description" content="Use Tailwind CSS in a Django project with no Node, npm, or webpack. The django-tailwind-cli package downloads the standalone binary and rebuilds the CSS from a management command. One template tag serves it.">
 <meta property="og:url" content="https://django-seedkit.viewflow.io/blog/django-tailwind-without-node/">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/assets/blog.css">
@@ -20,8 +20,8 @@ document.documentElement.className =
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "How to use Tailwind CSS in Django without Node",
-  "description": "Tailwind in a Django project with no Node, npm, or webpack: django-tailwind-cli downloads the standalone binary, rebuilds CSS from a management command, and serves it through one template tag.",
+  "headline": "Tailwind CSS in Django without Node",
+  "description": "Use Tailwind CSS in a Django project with no Node, npm, or webpack. The django-tailwind-cli package downloads the standalone binary and rebuilds the CSS from a management command. One template tag serves it.",
   "datePublished": "2026-07-29",
   "dateModified": "2026-07-29",
   "author": { "@type": "Organization", "name": "Django Seedkit" },
@@ -51,10 +51,10 @@ document.documentElement.className =
 <main>
 <article>
   <p class="kicker"><a href="/blog/">Blog</a> · Frontend</p>
-  <h1>How to use Tailwind CSS in Django without Node</h1>
-  <p class="lede">No <code>package.json</code>, no <code>node_modules</code>, no webpack. Tailwind ships a
-  standalone binary, and <code>django-tailwind-cli</code> downloads it and drives it from a management
-  command.</p>
+  <h1>Tailwind CSS in Django without Node</h1>
+  <p class="lede">A Tailwind build needs no <code>package.json</code>, no <code>node_modules</code>, and no
+  webpack. Tailwind ships a standalone binary. <code>django-tailwind-cli</code> downloads that binary and
+  runs it from a management command.</p>
 
 <pre><code>uv add django-tailwind-cli</code></pre>
 
@@ -68,21 +68,21 @@ STATICFILES_DIRS = [BASE_DIR / "assets"]
 TAILWIND_CLI_VERSION = "4.3.2"   <span class="c"># check the latest tag on
                                  # github.com/tailwindlabs/tailwindcss/releases</span></code></pre>
 
-  <p>Pin the CLI version, and not only in production. Tailwind 4 point releases can change what the build
-  emits, and an unpinned CLI means CI builds different CSS than you did.</p>
+  <p>Pin the CLI version in every environment, not only in production. A Tailwind 4 point release can
+  change the build output, and an unpinned CLI makes CI build different CSS.</p>
 
   <div class="gotcha">
-    <p><strong>Create the directory before you boot.</strong> Django validates
-    <code>STATICFILES_DIRS</code> at startup and raises if an entry isn't a real directory on disk — so a
-    fresh clone fails on <code>runserver</code> with an error that says nothing about Tailwind. Run
-    <code>mkdir -p assets</code>, and remember that an empty directory won't survive a
-    <code>git clone</code> on its own.</p>
+    <p><strong>Django stops at boot if the <code>assets/</code> directory does not exist.</strong>
+    Django checks every <code>STATICFILES_DIRS</code> entry at startup, and raises an error if the path
+    is not a directory. The message names <code>STATICFILES_DIRS</code> and not Tailwind, so a fresh
+    clone looks broken for another reason. Run <code>mkdir -p assets</code>, and add one tracked file, because Git does not store an empty
+    directory.</p>
   </div>
 
   <h2>The template tag</h2>
 
-  <p>One tag handles both environments: in development it points at the live-rebuilt file, in production
-  at the collected one. No <code>{% if debug %}</code> anywhere.</p>
+  <p>One tag covers both environments. In development it points at the file that the watcher rebuilds. In
+  production it points at the collected file. No template needs an <code>{% if debug %}</code> branch.</p>
 
 <pre><code>{% load tailwind_cli %}
 &lt;!DOCTYPE html&gt;
@@ -97,26 +97,27 @@ TAILWIND_CLI_VERSION = "4.3.2"   <span class="c"># check the latest tag on
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
 
-  <p>Forgetting <code>{% load tailwind_cli %}</code> is the most common way to get an unstyled page —
-  Django renders the missing tag as nothing rather than failing.</p>
+  <p>Keep the <code>{% load tailwind_cli %}</code> line at the top of the template. Without it Django
+  raises <code>TemplateSyntaxError</code> and reports <code>tailwind_css</code> as an invalid block tag.
+  A copied snippet drops that line often.</p>
 
   <h2>Development</h2>
 
 <pre><code>python manage.py tailwind runserver</code></pre>
 
-  <p>That runs the watcher and the dev server under one autoreloader, and passes every
-  <code>runserver</code> flag straight through. The first run downloads the binary into
-  <code>.django_tailwind_cli/</code> and generates a source CSS file; both are gitignored for you.</p>
+  <p>That command runs the watcher and the development server under one autoreloader, and it accepts every
+  <code>runserver</code> flag. The first run downloads the binary to <code>.django_tailwind_cli/</code> and
+  creates a source CSS file. The package adds that directory to <code>.gitignore</code>.</p>
 
-  <p>One Tailwind 4 change worth knowing: templates are discovered through <code>@source</code>
-  directives in that source CSS, not by scanning your project. Add a new templates directory and you add
-  a matching <code>@source</code> line, or its classes get purged out of the build.</p>
+  <p>Tailwind 4 finds templates through <code>@source</code> directives in the source CSS. It does not scan
+  the project. Add a new templates directory, then add an <code>@source</code> line for it. Without that
+  line, the build drops every class in those templates.</p>
 
   <div class="cta">
-    <p>Or hand it to your agent, which reads the wiring above from a maintained reference file and
-    applies it to your repo:</p>
+    <p>Or give the task to an agent. It reads the same setup from a maintained reference file and applies
+    it to the repository:</p>
 <pre><code>/django-seedkit add Tailwind</code></pre>
-    <p>Full wiring, including the Docker build step, DaisyUI, and custom error pages:
+    <p>The reference holds the full setup, the Docker build step, DaisyUI, and custom error pages:
     <a href="https://github.com/viewflow/seedkit/blob/main/skills/django-seedkit/references/tailwind.md" target="_blank" rel="noopener">tailwind.md</a>
     · <a href="/">What Django Seedkit is</a></p>
   </div>

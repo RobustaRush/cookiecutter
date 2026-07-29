@@ -8,11 +8,11 @@ document.documentElement.className =
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How to add Stripe Checkout to Django — Django Seedkit</title>
-<meta name="description" content="Take a subscription payment in Django with Stripe-hosted Checkout: store the customer ID, create the session, and use an idempotency key so concurrent first checkouts can't create duplicate customers.">
+<meta name="description" content="Take a subscription payment in Django with Stripe Checkout. Store the customer ID, create the session, and use an idempotency key to prevent duplicate Stripe customers.">
 <link rel="canonical" href="https://django-seedkit.viewflow.io/blog/django-stripe-checkout/">
 <meta property="og:type" content="article">
 <meta property="og:title" content="How to add Stripe Checkout to Django">
-<meta property="og:description" content="Take a subscription payment in Django with Stripe-hosted Checkout: store the customer ID, create the session, and use an idempotency key so concurrent first checkouts can't create duplicate customers.">
+<meta property="og:description" content="Take a subscription payment in Django with Stripe Checkout. Store the customer ID, create the session, and use an idempotency key to prevent duplicate Stripe customers.">
 <meta property="og:url" content="https://django-seedkit.viewflow.io/blog/django-stripe-checkout/">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/assets/blog.css">
@@ -21,7 +21,7 @@ document.documentElement.className =
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "How to add Stripe Checkout to Django",
-  "description": "Take a subscription payment in Django with Stripe-hosted Checkout: store the customer ID, create the session, and use an idempotency key so concurrent first checkouts can't create duplicate customers.",
+  "description": "Take a subscription payment in Django with Stripe Checkout. Store the customer ID, create the session, and use an idempotency key to prevent duplicate Stripe customers.",
   "datePublished": "2026-07-29",
   "dateModified": "2026-07-29",
   "author": { "@type": "Organization", "name": "Django Seedkit" },
@@ -52,10 +52,10 @@ document.documentElement.className =
 <article>
   <p class="kicker"><a href="/blog/">Blog</a> · Billing</p>
   <h1>How to add Stripe Checkout to Django</h1>
-  <p class="lede">Stripe hosts the payment page, so no card number ever reaches your server and you write
-  no plan-switching UI. Django's side is two views and one field on the user.</p>
+  <p class="lede">Stripe hosts the payment page. No card number reaches the Django server, and the
+  project needs no plan-switch interface. Django needs two views and one field on the user model.</p>
 
-  <p>Install the official SDK and read the keys from the environment:</p>
+  <p>Install the official Stripe library and read the keys from the environment.</p>
 
 <pre><code>uv add stripe</code></pre>
 
@@ -70,10 +70,10 @@ _stripe.api_key = STRIPE_SECRET_KEY</code></pre>
 
   <h2>Store the customer ID</h2>
 
-  <p>Add two fields to whatever model represents a user: <code>stripe_customer_id</code> as a
-  <code>CharField</code>, and <code>is_subscribed</code> as a <code>BooleanField</code>. Then
-  <code>makemigrations</code>. A Stripe customer is created once and reused for every later session and
-  portal visit.</p>
+  <p>Add two fields to the user model. Use a <code>CharField</code> for
+  <code>stripe_customer_id</code>, and a <code>BooleanField</code> for <code>is_subscribed</code>. Then
+  run <code>makemigrations</code>. Create the Stripe customer one time, and use the same customer for
+  every later session and portal visit.</p>
 
 <pre><code>def get_or_create_customer(user):
     if user.stripe_customer_id:
@@ -87,11 +87,11 @@ _stripe.api_key = STRIPE_SECRET_KEY</code></pre>
     return customer.id</code></pre>
 
   <div class="gotcha">
-    <p><strong>The idempotency key is doing real work here.</strong> A user who double-clicks the upgrade
-    button sends two requests that both read an empty <code>stripe_customer_id</code>, and you get two
-    Stripe customers for one person, with the subscription sitting on whichever one won. The key turns the
-    second call into an upsert that returns the same customer. Don't reach for a row lock instead: it
-    would be held across a network round-trip to Stripe, stalling workers when Stripe is slow.</p>
+    <p><strong>A double click on the upgrade button can create two Stripe customers.</strong> Both requests
+    read an empty <code>stripe_customer_id</code>, and both call <code>Customer.create</code>. The
+    subscription then belongs to one of the two customers. The idempotency key makes the second call return
+    the first customer. Do not use a row lock instead. A row lock stays open across the network call to
+    Stripe, and it blocks a worker when Stripe is slow.</p>
   </div>
 
   <h2>The checkout session</h2>
@@ -109,15 +109,15 @@ def create_checkout_session(request):
     assert session.url
     return redirect(session.url)</code></pre>
 
-  <p>Landing on <code>success_url</code> is not proof of payment — the browser can be closed before
-  Stripe finishes, and a card can fail later. Flip <code>is_subscribed</code> from the webhook, never
-  from the redirect.</p>
+  <p>A redirect to <code>success_url</code> is not proof of payment. The user can close the browser before
+  Stripe completes the charge, and a card can fail later. Set <code>is_subscribed</code> from the webhook,
+  not from the redirect.</p>
 
   <div class="cta">
-    <p>Or hand it to your agent, which reads the wiring above from a maintained reference file and
-    applies it to your repo:</p>
+    <p>Or give the task to an agent. It reads the same setup from a maintained reference file and applies
+    it to the repository:</p>
 <pre><code>/django-seedkit add Stripe subscriptions</code></pre>
-    <p>Full wiring, including the webhook handler and the dj-stripe alternative:
+    <p>The reference holds the full setup, the webhook handler, and the dj-stripe alternative:
     <a href="https://github.com/viewflow/seedkit/blob/main/skills/django-seedkit/references/billing.md" target="_blank" rel="noopener">billing.md</a>
     · <a href="/">What Django Seedkit is</a></p>
   </div>

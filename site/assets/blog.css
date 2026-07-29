@@ -216,14 +216,10 @@ pre .c { color: var(--code-accent); }
   font-size: 0.95rem;
   color: var(--on-surface-variant);
 }
-.soon {
-  border: 1px dashed var(--outline-variant);
-  border-radius: 0.75rem;
-  padding: 1.25rem 1.5rem;
+.all-refs {
   color: var(--on-surface-variant);
   font-size: 0.95rem;
 }
-.soon p:last-child { margin-bottom: 0; }
 
 footer {
   border-top: 1px solid var(--outline-variant);

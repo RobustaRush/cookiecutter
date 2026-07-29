@@ -27,12 +27,82 @@ produce pages that sprawl and rank for nothing. Splitting per aspect gives each 
 
 - **~300 words** of prose plus one or two code blocks. Not 150: a hundred 150-word pages on one domain
   is a thin-content cluster, which is the failure mode that would sink the point of publishing them.
-- **Title is the query.** "How to add magic-link login to Django", not "Magic-link login".
+- **Title is the query.** Write the words a reader would type. See "Titles" below for the forms.
 - **One thing that breaks.** Every reference holds at least one non-obvious failure the test loop
   found. That failure is the article's reason to exist — build the body toward it, in a `.gotcha` block.
 - **Link the reference, don't fork it.** Show the minimum snippet, link the reference on GitHub for
   full wiring. Two copies drift; the reference stays canonical.
 - **No comparison tables.** Those live on the landing page and in the reference.
+
+## Titles
+
+The title is whatever the reader would type into a search box, and that is not always "How to". A
+backlog where every one of a hundred titles opens the same way reads as generated, and "How to " spends
+seven of the ~60 characters a search result shows. Pick the form from the article's job:
+
+| Form | Use it when | Example |
+|---|---|---|
+| `How to <verb> …` | the query really is a task | How to add Stripe Checkout to Django |
+| `<Verb> …` (imperative) | the reader wants an outcome, not a procedure | Stop brute-force logins in Django with django-axes |
+| `<Noun phrase>` | the thing itself is the query | Tailwind CSS in Django without Node |
+| `Why …` | the article explains a surprise, not a task | Why your Django SECRET_KEY must have no default |
+| `Where to put …` | the question is placement | Where to put Celery tasks so Django finds them |
+
+Keep "How to" under about half the published set. Name the package in the title when the reader would
+search for it by name, and keep "Django" in every title.
+
+## Approved English
+
+Article prose follows the writing rules of **ASD-STE100 Simplified Technical English**, the controlled
+language the aerospace industry writes maintenance procedures in. Short declarative sentences with one
+idea each are also what a retrieval system can quote without mangling, so the standard and the goal of
+the blog point the same way. This is conformance to the writing rules only — the STE Dictionary of
+approved words is not available here, so approximate it by choosing the plainer word and never claim
+compliance on the page itself.
+
+What it means in practice:
+
+- **25 words** maximum in a descriptive sentence, **20** in an instruction. One idea per sentence.
+- **6 sentences** maximum per paragraph, one topic each.
+- **Active voice.** Imperative for every instruction: "Set the default settings module to production".
+- **No `-ing` verb forms.** No progressive tense, no gerund subjects. "Forgetting the tag causes…"
+  becomes "A template without the tag raises…". `-ing` words that are plain nouns are fine (`setting`,
+  `warning`, `logging`).
+- **No contractions.** "do not", not "don't".
+- **No second person as the subject.** Instructions are imperative; description uses the real subject
+  ("the project needs no reset flow", not "you don't need a reset flow"). Possessive "your project" is
+  fine in the CTA.
+- **No idiom, no metaphor.** "reach for a row lock", "hands anyone a DoS", "worth knowing" all go.
+  Domain terms are not idiom, but "wiring" is — say "setup".
+- **Condition before instruction** in every `.gotcha` block: name the failure, then the fix. That is
+  STE's shape for a warning, and it is also the order a reader scanning the page needs.
+- **Same word for the same thing** across articles. A "management command" is not also a "manage.py
+  task".
+- **Keep the articles** — "the", "a" — and the full `that` in a relative clause.
+
+Titles, H1s, and code blocks sit outside these rules. Everything else on the page is prose: lede, body,
+`.gotcha`, `.cta`, `<meta name="description">`, `og:description`, and the JSON-LD `description`.
+
+### Where STE overrides nabokov
+
+The `nabokov-copywriter` skill's rhythm pass asks for sentence-length variance, including sentences of
+25–40 words. STE forbids them. STE wins for article prose, so these findings are expected and are not
+to be "fixed":
+
+- **NB509** flat rhythm, **NB507** staccato, **NB512** repeated openers — uniform short sentences are
+  the standard, not a tic.
+- **NB529** punchline endings, **NB530** verbless fragments — one-idea sentences end short. On these
+  pages the count is also inflated: nabokov reads raw HTML and counts head-tag and footer spans as
+  paragraphs.
+- **NB201/NB202** readability grade, when the flagged line is inside a `<pre>` block. Same cause.
+
+Still binding, because they measure honesty rather than cadence: **NB3xx** (puffery, borrowed
+authority, unexpanded acronyms, dummy subjects — STE dislikes "there is" too), **NB4xx** (wordiness),
+**NB312** (a CTA must name the action), and the minimal-paraphrase rule.
+
+A mechanical check of the numeric limits above — sentence length, sentences per paragraph, `-ing`
+forms, passive markers, contractions — is ten lines of regex over the `<p>` and `<meta>` text with
+`<pre>` blocks stripped. Write it fresh per batch; it is not worth a home in the repository.
 
 ## Page template
 
@@ -49,8 +119,8 @@ and OG tags, and a closing `/django-seedkit add …` line. Every new article als
 | `django-magic-link-login` | How to add magic-link login to Django | `auth.md` §B | Stock `auth.User.email` isn't unique; the backend picks the first match |
 | `django-stripe-checkout` | How to add Stripe Checkout to Django | `billing.md` §A checkout | Idempotency key stops concurrent first-checkouts making duplicate customers |
 | `django-celery-redis` | How to add Celery to Django with Redis | `tasks-celery.md` setup | No time limits means one hung task pins a worker forever |
-| `django-tailwind-without-node` | How to use Tailwind CSS in Django without Node | `tailwind.md` setup | `STATICFILES_DIRS[0]` must exist on disk or Django raises at boot |
-| `django-brute-force-lockout` | How to lock out brute-force logins in Django | `auth-hardening.md` axes | `AxesBackend` not first in `AUTHENTICATION_BACKENDS` disables lockout silently |
+| `django-tailwind-without-node` | Tailwind CSS in Django without Node | `tailwind.md` setup | `STATICFILES_DIRS[0]` must exist on disk or Django raises at boot |
+| `django-brute-force-lockout` | Stop brute-force logins in Django with django-axes | `auth-hardening.md` axes | `AxesBackend` not first in `AUTHENTICATION_BACKENDS` disables lockout silently |
 
 ---
 

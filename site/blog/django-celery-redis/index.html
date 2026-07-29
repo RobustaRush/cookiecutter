@@ -8,11 +8,11 @@ document.documentElement.className =
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How to add Celery to Django with Redis — Django Seedkit</title>
-<meta name="description" content="Wire Celery into a Django project with Redis as the broker: config/celery.py, the app import, separate Redis databases for broker and results, and the two time limits that keep a hung task from pinning a worker.">
+<meta name="description" content="Add Celery to a Django project with Redis as the broker. Create config/celery.py, import the app, give the broker and the results separate Redis databases, and set both task time limits.">
 <link rel="canonical" href="https://django-seedkit.viewflow.io/blog/django-celery-redis/">
 <meta property="og:type" content="article">
 <meta property="og:title" content="How to add Celery to Django with Redis">
-<meta property="og:description" content="Wire Celery into a Django project with Redis as the broker: config/celery.py, the app import, separate Redis databases for broker and results, and the two time limits that keep a hung task from pinning a worker.">
+<meta property="og:description" content="Add Celery to a Django project with Redis as the broker. Create config/celery.py, import the app, give the broker and the results separate Redis databases, and set both task time limits.">
 <meta property="og:url" content="https://django-seedkit.viewflow.io/blog/django-celery-redis/">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/assets/blog.css">
@@ -21,7 +21,7 @@ document.documentElement.className =
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "How to add Celery to Django with Redis",
-  "description": "Wire Celery into a Django project with Redis as the broker: config/celery.py, the app import, separate Redis databases for broker and results, and the two time limits that keep a hung task from pinning a worker.",
+  "description": "Add Celery to a Django project with Redis as the broker. Create config/celery.py, import the app, give the broker and the results separate Redis databases, and set both task time limits.",
   "datePublished": "2026-07-29",
   "dateModified": "2026-07-29",
   "author": { "@type": "Organization", "name": "Django Seedkit" },
@@ -52,13 +52,14 @@ document.documentElement.className =
 <article>
   <p class="kicker"><a href="/blog/">Blog</a> · Background work</p>
   <h1>How to add Celery to Django with Redis</h1>
-  <p class="lede">Django has no background-task system of its own. Celery gives you workers, retries,
-  rate limits, and schedules — with Redis as the broker, that's one package and two files.</p>
+  <p class="lede">Django has no background-task system. Celery adds workers, retries, rate limits, and
+  schedules. With Redis as the broker, the setup is one package and two files.</p>
 
 <pre><code>uv add 'celery[redis]'</code></pre>
 
-  <p>Celery needs an app object that loads Django's settings. Put it beside your settings module and
-  import it from the package <code>__init__.py</code>, so it exists before any task module is imported.</p>
+  <p>Celery needs an app object that loads the Django settings. Put the object beside the settings module.
+  Import it from the package <code>__init__.py</code>, so that it exists before Celery imports a task
+  module.</p>
 
 <pre><code><span class="c"># config/celery.py</span>
 import os
@@ -75,15 +76,15 @@ from .celery import app as celery_app
 
 __all__ = ("celery_app",)</code></pre>
 
-  <p>Default that settings module to <em>production</em>, not local. A worker started without
-  <code>DJANGO_SETTINGS_MODULE</code> in its environment should come up with production hardening; your
-  dev shell names <code>config.settings.local</code> to override it.</p>
+  <p>Set the default settings module to production, not local. A worker with no
+  <code>DJANGO_SETTINGS_MODULE</code> in its environment then starts with the production settings. The
+  development shell names <code>config.settings.local</code> to override the default.</p>
 
   <h2>Settings</h2>
 
-  <p>The <code>CELERY</code> namespace means every setting below is read off Django's settings object.
-  Give the broker and the result backend their own Redis database numbers, and keep a note of which
-  number belongs to what — the cache, a channel layer, and a rate limiter all want one too.</p>
+  <p>The <code>CELERY</code> namespace means that Celery reads every setting below from the Django settings
+  object. Give the broker and the result backend separate Redis database numbers. Record which number
+  belongs to which service, because the cache, a channel layer, and a rate limiter each need one.</p>
 
 <pre><code>REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
@@ -93,25 +94,26 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TASK_SOFT_TIME_LIMIT = 540
 CELERY_TASK_TIME_LIMIT = 600</code></pre>
 
-  <p>The <code>.rstrip("/")</code> matters when the URL comes from a managed Redis provider: a trailing
-  slash builds <code>redis://host:6379//1</code>, which is not the URL you meant.</p>
+  <p>The <code>.rstrip("/")</code> call matters when a managed provider supplies the URL. A slash at
+  the end builds <code>redis://host:6379//1</code>, which is not the correct URL.</p>
 
   <div class="gotcha">
-    <p><strong>Set both time limits.</strong> Celery ships with none. A task that hangs on a socket read
-    holds its worker slot forever, and enough of them stop the queue moving with no error anywhere,
-    because nothing failed. The soft limit raises <code>SoftTimeLimitExceeded</code> inside the task so it
-    can clean up. The hard limit kills the process if it doesn't.</p>
+    <p><strong>A task with no time limit can hold a worker slot forever.</strong> Celery sets no limit by
+    default. A task that waits on a socket read keeps its slot, and enough of these tasks stop the queue.
+    Nothing fails, so nothing reaches the log. Set <code>CELERY_TASK_SOFT_TIME_LIMIT</code>: it raises
+    <code>SoftTimeLimitExceeded</code> inside the task, and the task can then clean up.
+    <code>CELERY_TASK_TIME_LIMIT</code> kills the process if the task ignores the soft limit.</p>
   </div>
 
-  <p>Run it locally in a second terminal, with Redis already up:</p>
+  <p>Run the worker in a second terminal, with Redis already up.</p>
 
 <pre><code>DJANGO_SETTINGS_MODULE=config.settings.local uv run celery -A config worker -l info</code></pre>
 
   <div class="cta">
-    <p>Or hand it to your agent, which reads the wiring above from a maintained reference file and
-    applies it to your repo:</p>
+    <p>Or give the task to an agent. It reads the same setup from a maintained reference file and applies
+    it to the repository:</p>
 <pre><code>/django-seedkit add Celery background tasks</code></pre>
-    <p>Full wiring, including the Compose service, the healthcheck, and Celery Beat:
+    <p>The reference holds the full setup, the Compose service, the healthcheck, and Celery Beat:
     <a href="https://github.com/viewflow/seedkit/blob/main/skills/django-seedkit/references/tasks-celery.md" target="_blank" rel="noopener">tasks-celery.md</a>
     · <a href="/">What Django Seedkit is</a></p>
   </div>
