@@ -42,6 +42,9 @@ for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null &
 [ -n "$up" ] || { echo "BOOT CHECK FAILED"; kill "$RUNSERVER_PID"; exit 1; }
 ```
 
+- `pre-commit run` takes an explicit `--files` list, never `--all-files`. Generated projects have no `.git` of their own — they sit inside the examples repo — so `--all-files` resolves the repo root upward and lints every sibling project, reporting their failures as this case's.
+- Run a formatting hook twice: the first pass rewrites files and exits non-zero by design, so allow it to fail (`|| true`) and assert on the second. A second-pass failure means a broken hook id or `rev:`, which is the thing worth catching.
+
 ### Review-section rules
 
 The reviewer prompt is short and identical across cases: verify the listed structural facts quoting the literal substring read, report only boot-blockers / assertion violations / security holes, no nitpicks, `"No issues found."` is a valid report.
@@ -67,7 +70,7 @@ Coverage rules. Use these to regenerate the suite when the skill changes.
    - Lint (Ruff): `yes` / `no`
    - Test runner: `pytest` / `manage.py test` (default)
    - Type check (pyright): `yes` / `no` (default)
-   - Pre-commit hooks: `yes` / `no` (default)
+   - Pre-commit hooks: `yes` / `no` (default) — `yes` appears in cases 02 (with templates, so the HTML formatters fire) and 07 (without)
    - i18n (`gettext`): `yes` / `no` (default)
    - Task runner: `mise` / `just` / `make` / `poe` / `none` (mise + just appear in cases 02 / 03)
 

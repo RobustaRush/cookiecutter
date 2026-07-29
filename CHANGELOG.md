@@ -8,6 +8,9 @@ Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One 
 - `pre-commit.md` — four hooks: `uv-lock` (blocks a commit whose `uv.lock` no longer matches `pyproject.toml`, which CI's `uv sync --locked` would reject), `django-upgrade` and `djade` (deprecated Django APIs and template syntax, neither covered by Ruff's `UP` ruleset), and `djhtml` (template indentation).
 - `tailwind.md` — an optional `rustywind` pre-commit hook that sorts `class="…"` attributes into Tailwind's canonical order.
 
+### Testcases and harness
+- Case 02 flips to `Pre-commit hooks: yes` and both 02 and 07 now execute `pre-commit run` in their boot checks. Nothing in the suite had ever run a hook — the one case that enabled pre-commit only asserted the config file existed, which cannot catch a stale `rev:`, a renamed hook id, or generated templates that fail the skill's own formatters. 02 carries the template surface (`djhtml` / `djade` / `rustywind`), 07 covers the no-template path.
+
 ## 26.31.2 — 2026-07-28
 
 ### Changed

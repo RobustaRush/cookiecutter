@@ -1,6 +1,6 @@
 # 02 — Split settings, Postgres on host, WhiteNoise + SMTP, Tailwind CSS + Stripe billing
 
-Covers split settings layout, host Postgres, Ruff, WhiteNoise statics, SMTP email, `django-tailwind-cli` frontend integration, and Stripe billing (raw SDK — Checkout session, Customer Portal, webhook handler).
+Covers split settings layout, host Postgres, Ruff, WhiteNoise statics, SMTP email, `django-tailwind-cli` frontend integration, Stripe billing (raw SDK — Checkout session, Customer Portal, webhook handler), and the pre-commit hook set against a real template surface — `djhtml` / `djade` / `rustywind` rewrite HTML, so this is the case that proves the skill's own templates survive its own hooks.
 
 ## Prompt
 
@@ -16,7 +16,7 @@ Postgres location: on the host (use `createdb` for the project DB).
 Lint with Ruff: yes.
 Test runner: pytest + pytest-django.
 Type check (pyright + django-stubs): yes.
-Pre-commit hooks: no.
+Pre-commit hooks: yes.
 Internationalisation (i18n): no.
 Custom user model: yes (custom `users.User` extending `AbstractUser`).
 Auth add-on: `django-allauth` (email login, mandatory email verification, no social providers).
@@ -69,6 +69,13 @@ curl -sf http://127.0.0.1:8000/ | grep -q 'property="og:title"'
 curl -sf http://127.0.0.1:8000/sitemap.xml | grep -q '<urlset'
 uv run ruff check .
 uv run pyright
+# Pre-commit hooks must install and be idempotent on the generated tree.
+# --files, not --all-files: the project has no .git of its own (it sits inside the
+# examples repo), so --all-files would lint every sibling project. The first pass may
+# rewrite files — djhtml/djade/rustywind are formatters — so only the second must pass.
+PC_FILES="pyproject.toml config/settings/base.py templates/base.html templates/index.html"
+uv run pre-commit run --files $PC_FILES || true
+uv run pre-commit run --files $PC_FILES
 # Task runner sanity — mise.toml present.
 test -f mise.toml
 kill "$RUNSERVER_PID"
@@ -150,10 +157,11 @@ Read-only audit of the project in the current directory. Quote the file path and
 Verify these structural facts:
 
 **Foundation**
-- Files present: `pyproject.toml`, `uv.lock`, `manage.py`, `config/settings/{base,local,production}.py`, `.env`, `.gitignore`.
+- Files present: `pyproject.toml`, `uv.lock`, `manage.py`, `config/settings/{base,local,production}.py`, `.env`, `.gitignore`, `.pre-commit-config.yaml`.
 - `manage.py` defaults `DJANGO_SETTINGS_MODULE` to `config.settings.local`; `wsgi.py` to `config.settings.production`.
-- `pyproject.toml` runtime deps include `psycopg[binary]`, `django-tailwind-cli`, `django-allauth`, `django-axes`, `stripe`, `whitenoise`. Dev deps include `ruff`, `pytest`, `pytest-django`, `pyright`, `django-stubs`, `django-stubs-ext`, `django-browser-reload`.
+- `pyproject.toml` runtime deps include `psycopg[binary]`, `django-tailwind-cli`, `django-allauth`, `django-axes`, `stripe`, `whitenoise`. Dev deps include `ruff`, `pytest`, `pytest-django`, `pyright`, `django-stubs`, `django-stubs-ext`, `django-browser-reload`, `pre-commit`.
 - `pyproject.toml` has a `[tool.ruff]` block and a `[tool.pyright]` block.
+- `.pre-commit-config.yaml` declares hook ids `ruff-check`, `ruff-format`, `uv-lock`, `django-upgrade`, `djade`, `djhtml`, and `rustywind`. Neither the `django-upgrade` nor the `djade` hook passes a `--target-version` arg — both read the Django pin from `pyproject.toml`.
 - `mise.toml` present at project root with `[tools]` and at least one `[tasks.*]` block.
 
 **Settings**

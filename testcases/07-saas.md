@@ -64,6 +64,11 @@ test "$(curl -sf http://127.0.0.1:8000/healthz)" = "ok"
 test "$(curl -sf http://127.0.0.1:8000/readyz)" = "ready"
 kill "$RUNSERVER_PID"
 uv run pyright
+# Pre-commit hooks on the no-template path: uv-lock + django-upgrade + ruff.
+# --files, not --all-files: no per-project .git, so --all-files reaches sibling projects.
+PC_FILES="pyproject.toml config/settings/base.py config/urls.py users/models.py"
+uv run pre-commit run --files $PC_FILES || true
+uv run pre-commit run --files $PC_FILES
 docker build --target prod -t 07-vps-sqlite-saas:test .
 docker run --rm 07-vps-sqlite-saas:test which gunicorn
 docker run --rm 07-vps-sqlite-saas:test which litestream
@@ -79,6 +84,7 @@ Verify these structural facts:
 
 **Foundation**
 - Files present: `pyproject.toml`, `manage.py`, `config/settings/{base,local,production,test}.py`, `config/routers.py`, `Dockerfile` (multi-stage), `deploy/docker-compose.prod.yml`, `deploy/Caddyfile`, `litestream.yml`, `entrypoint.sh`, `mise.toml`, `.github/workflows/test.yml`, `.pre-commit-config.yaml`, `.env`, `.env.example`, `.dockerignore`, `.gitignore`. No `Dockerfile.dev`, no root `docker-compose.yml` (dev runs on the host; SQLite needs no local services).
+- `.pre-commit-config.yaml` declares hook ids `ruff-check`, `ruff-format`, `uv-lock`, `django-upgrade`, `djade`, and `djhtml`. No `rustywind` hook — this project has no Tailwind.
 - `mise.toml` has `[tasks.deploy]` running `docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d` and **no** `deploy-migrate` task — the SQLite + Litestream `entrypoint.sh` runs `migrate --noinput` on every boot (`dev-tasks.md` exception).
 - `pyproject.toml` runtime deps include `django-environ`, `django-tasks`, `django-tasks-db`, `whitenoise`, `django-allauth[mfa]`, `django-axes`, `django-csp`, `sentry-sdk`, `structlog`, `django-structlog`, `gunicorn`. **No** `psycopg`, `celery`, `redis`, `django-dbbackup`. Dev deps include `pytest`, `pytest-django`, `pyright`, `django-stubs`, `django-stubs-ext`, `ruff`, `pre-commit`.
 
