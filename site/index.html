@@ -668,7 +668,9 @@ claude plugin install seedkit@viewflow</pre>
 
 <div class="webring">
   <webring-css site="https://django-seedkit.viewflow.io"></webring-css>
-  <script src="https://djangowebring.com/static/webring.js"></script>
+  <!-- defer: this is the only cross-origin request on the page, and a parser-blocking
+       script here would hold the footer and the theme toggle behind it -->
+  <script src="https://djangowebring.com/static/webring.js" defer></script>
 </div>
 
 <footer>
