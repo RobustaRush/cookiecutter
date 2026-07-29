@@ -216,11 +216,6 @@ pre .c { color: var(--code-accent); }
   font-size: 0.95rem;
   color: var(--on-surface-variant);
 }
-.all-refs {
-  color: var(--on-surface-variant);
-  font-size: 0.95rem;
-}
-
 footer {
   border-top: 1px solid var(--outline-variant);
   display: flex;

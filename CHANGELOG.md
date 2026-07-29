@@ -2,6 +2,12 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
+## 26.31.3 — 2026-07-29
+
+### Added
+- `pre-commit.md` — four hooks: `uv-lock` (blocks a commit whose `uv.lock` no longer matches `pyproject.toml`, which CI's `uv sync --locked` would reject), `django-upgrade` and `djade` (deprecated Django APIs and template syntax, neither covered by Ruff's `UP` ruleset), and `djhtml` (template indentation).
+- `tailwind.md` — an optional `rustywind` pre-commit hook that sorts `class="…"` attributes into Tailwind's canonical order.
+
 ## 26.31.2 — 2026-07-28
 
 ### Changed

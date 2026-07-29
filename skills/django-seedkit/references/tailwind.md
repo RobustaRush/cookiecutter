@@ -116,6 +116,26 @@ stage never puts the venv on `PATH` — only the prod stage does.
 
 `tailwind build` produces a minified, purged CSS file at `STATICFILES_DIRS[0] / "css" / "tailwind.css"` (configurable via `TAILWIND_CLI_DIST_CSS`). `collectstatic` then picks it up and WhiteNoise / S3 serves it.
 
+## Class sorting
+
+Only when `references/pre-commit.md` is applied. Add to `.pre-commit-config.yaml` so every
+`class="…"` lands in Tailwind's canonical order and two developers editing one template stop
+producing conflicting attribute orders:
+
+```yaml
+  - repo: local
+    hooks:
+      - id: rustywind
+        name: rustywind Tailwind class sorter
+        language: node
+        additional_dependencies: [rustywind@latest]
+        entry: rustywind
+        args: [--write]
+        types_or: [html]
+```
+
+Pre-commit installs the Node package into its own environment — the project stays Node-free.
+
 ## DaisyUI (optional)
 
 DaisyUI is a component layer on top of Tailwind: instead of stringing utilities you write `btn btn-primary`, `card`, `navbar`, `alert alert-warning`. Apply only when the skill's DaisyUI follow-up got `yes`.

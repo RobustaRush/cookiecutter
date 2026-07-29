@@ -38,12 +38,41 @@ repos:
         args: [--fix]
       - id: ruff-format
 
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.17
+    hooks:
+      # Blocks the commit when uv.lock drifts from pyproject.toml; CI runs `uv sync --locked`.
+      - id: uv-lock
+
+  - repo: https://github.com/adamchainz/django-upgrade
+    rev: 1.29.1
+    hooks:
+      # Rewrites deprecated Django APIs. Ruff's UP ruleset covers Python syntax, not Django's.
+      - id: django-upgrade
+
+  - repo: https://github.com/adamchainz/djade-pre-commit
+    rev: 1.7.0
+    hooks:
+      # Same, for template syntax: `{% load %}` removals, `{% if %}` operators.
+      - id: djade
+
+  - repo: https://github.com/rtts/djhtml
+    rev: 3.0.10
+    hooks:
+      - id: djhtml
+        entry: djhtml --tabwidth 2
+
   # Only if references/typecheck.md is applied:
   - repo: https://github.com/RobertCraigie/pyright-python
     rev: v1.1.411
     hooks:
       - id: pyright
 ```
+
+`django-upgrade` and `djade` read the target Django version from the `django>=…` pin in
+`pyproject.toml`, so neither takes a `--target-version` arg here.
+
+If `references/tailwind.md` is applied, add the class-sorting hook from that file too.
 
 Immediately after writing the file, run `uv run pre-commit autoupdate` and commit the bumped `rev:` values — the pins above age. A `rev:` older than the project's `ruff` dev dependency makes the hook and `uv run ruff format` fight over formatting.
 
