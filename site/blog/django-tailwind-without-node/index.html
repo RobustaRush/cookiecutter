@@ -65,7 +65,8 @@ INSTALLED_APPS = [
 ]
 
 STATICFILES_DIRS = [BASE_DIR / "assets"]
-TAILWIND_CLI_VERSION = "4.3.2"</code></pre>
+TAILWIND_CLI_VERSION = "4.3.2"   <span class="c"># check the latest tag on
+                                 # github.com/tailwindlabs/tailwindcss/releases</span></code></pre>
 
   <p>Pin the CLI version, and not only in production. Tailwind 4 point releases can change what the build
   emits, and an unpinned CLI means CI builds different CSS than you did.</p>

@@ -94,7 +94,7 @@ CELERY_TASK_SOFT_TIME_LIMIT = 540
 CELERY_TASK_TIME_LIMIT = 600</code></pre>
 
   <p>The <code>.rstrip("/")</code> matters when the URL comes from a managed Redis provider: a trailing
-  slash builds <code>redis://host:6379//1</code>, which is a different database than you meant.</p>
+  slash builds <code>redis://host:6379//1</code>, which is not the URL you meant.</p>
 
   <div class="gotcha">
     <p><strong>Set both time limits.</strong> Celery ships with none. A task that hangs on a socket read
