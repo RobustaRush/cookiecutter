@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+<script>
+document.documentElement.className =
+  matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to lock out brute-force logins in Django — Django Seedkit</title>
+<meta name="description" content="django-axes records every failed Django login and locks the attacker out after N tries. Two settings decide whether it works at all: backend order, and whether you lock on IP and username together.">
+<link rel="canonical" href="https://django-seedkit.viewflow.io/blog/django-brute-force-lockout/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to lock out brute-force logins in Django">
+<meta property="og:description" content="django-axes records every failed Django login and locks the attacker out after N tries. Two settings decide whether it works at all: backend order, and whether you lock on IP and username together.">
+<meta property="og:url" content="https://django-seedkit.viewflow.io/blog/django-brute-force-lockout/">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="/assets/blog.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to lock out brute-force logins in Django",
+  "description": "django-axes records every failed Django login and locks the attacker out after N tries. Two settings decide whether it works at all: backend order, and whether you lock on IP and username together.",
+  "datePublished": "2026-07-29",
+  "dateModified": "2026-07-29",
+  "author": { "@type": "Organization", "name": "Django Seedkit" },
+  "publisher": { "@type": "Organization", "name": "Django Seedkit" },
+  "mainEntityOfPage": "https://django-seedkit.viewflow.io/blog/django-brute-force-lockout/",
+  "about": { "@type": "SoftwareSourceCode", "programmingLanguage": "Python", "runtimePlatform": "Django" }
+}
+</script>
+</head>
+
+<body>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="/"><span class="leaf" aria-hidden="true">🌱</span> Django Seedkit</a>
+    <nav class="bar-actions">
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark theme">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 0 1-.5-17.99 7.5 7.5 0 0 0 8.49 11.4A9 9 0 0 1 12 21Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm-1-14h2v3h-2V3Zm0 18h2v3h-2v-3ZM3 11h3v2H3v-2Zm15 0h3v2h-3v-2ZM5.6 4.2 7.7 6.3 6.3 7.7 4.2 5.6l1.4-1.4Zm10.7 12.1 2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4Zm2.1-12.1 1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1ZM7.7 17.7l-2.1 2.1-1.4-1.4 2.1-2.1 1.4 1.4Z"/></svg>
+      </button>
+      <a class="bar-link" href="/blog/">Blog</a>
+      <a class="bar-link" href="https://github.com/viewflow/seedkit" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<article>
+  <p class="kicker"><a href="/blog/">Blog</a> · Auth</p>
+  <h1>How to lock out brute-force logins in Django</h1>
+  <p class="lede">Django counts no failed logins and rate-limits nothing. Whoever finds your login form
+  can try passwords until they run out. <code>django-axes</code> records every attempt and locks the
+  source out after a threshold.</p>
+
+<pre><code>uv add django-axes</code></pre>
+
+<pre><code><span class="c"># config/settings/base.py</span>
+INSTALLED_APPS += ["axes"]
+MIDDLEWARE += ["axes.middleware.AxesMiddleware"]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1                                <span class="c"># hours</span>
+AXES_LOCKOUT_PARAMETERS = [["ip_address", "username"]]
+AXES_RESET_ON_SUCCESS = True</code></pre>
+
+  <p>Then <code>manage.py migrate</code>: axes ships its own models to record attempts. Append to
+  <code>INSTALLED_APPS</code> and <code>MIDDLEWARE</code> rather than redeclaring them, so anything your
+  production settings add survives. <code>AxesMiddleware</code> belongs last: it wraps every other
+  middleware's authentication attempts.</p>
+
+  <div class="gotcha">
+    <p><strong><code>AxesBackend</code> must come first.</strong> Put it after
+    <code>ModelBackend</code> and you turn lockout off: the first backend authenticates the request
+    before axes ever sees it. Nothing raises, nothing logs, and the package still shows up in
+    <code>pip list</code>. The only way to catch it is to fail six logins on purpose and watch the
+    seventh succeed.</p>
+  </div>
+
+  <h2>Lock on both, not either</h2>
+
+  <p>Note the nested list in <code>AXES_LOCKOUT_PARAMETERS</code>. Nesting means <em>and</em>: lock the
+  combination of this IP and this username. A flat <code>["ip_address", "username"]</code> means
+  <em>or</em>, meaning either one alone, and username-only lockout hands anyone a denial-of-service. They
+  submit five bad passwords for your address, and you can't log in for an hour.</p>
+
+  <h2>Behind a proxy</h2>
+
+  <p>If Django sits behind Caddy, nginx, or a load balancer, <code>REMOTE_ADDR</code> is the proxy's
+  address on every request — so all traffic looks like one client and the IP half of the lockout stops
+  meaning anything. Install the extra and point axes at the forwarded header:</p>
+
+<pre><code>uv add 'django-axes[ipware]'</code></pre>
+
+<pre><code>AXES_IPWARE_PROXY_COUNT = 1
+AXES_IPWARE_META_PRECEDENCE_ORDER = ["HTTP_X_FORWARDED_FOR", "REMOTE_ADDR"]</code></pre>
+
+  <p>Check it by failing a login from a known address and reading the <code>axes_accessattempt</code>
+  table. If the IP recorded there is your proxy's, the header isn't reaching axes.</p>
+
+  <div class="cta">
+    <p>Or hand it to your agent, which reads the wiring above from a maintained reference file and
+    applies it to your repo:</p>
+<pre><code>/django-seedkit add lockout on brute force</code></pre>
+    <p>Full wiring, including the Redis cache handler and authenticator-app two-factor:
+    <a href="https://github.com/viewflow/seedkit/blob/main/skills/django-seedkit/references/auth-hardening.md" target="_blank" rel="noopener">auth-hardening.md</a>
+    · <a href="/">What Django Seedkit is</a></p>
+  </div>
+</article>
+</main>
+
+<footer>
+  <span>MIT licensed · Published 2026-07-29</span>
+  <span><a href="/blog/">All articles</a> · <a href="/">Home</a></span>
+</footer>
+
+<script>
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const html = document.documentElement;
+    const dark = html.classList.contains('dark');
+    html.classList.remove('light', 'dark');
+    html.classList.add(dark ? 'light' : 'dark');
+  });
+</script>
+
+</body>
+</html>

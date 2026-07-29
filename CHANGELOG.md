@@ -4,6 +4,9 @@ Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One 
 
 ## 26.31.3 — 2026-07-29
 
+### Added
+- A blog at <https://django-seedkit.viewflow.io/blog/>, linked from the landing page's header and footer. Five articles to start: magic-link login, Stripe Checkout, Celery on Redis, Tailwind without Node, brute-force lockout. One article per integration *aspect* rather than per reference file — a reference covers a whole topic and often two mutually exclusive packages, so a page per file would sprawl and rank for nothing. Each article shows the least wiring that works and then the failure the test loop found, and links the reference on GitHub instead of copying its snippets. `docs/articles-plan.md` holds the backlog (~110 articles read off the references' real section structure), the format rules, and what stays unpublished. `ansible/deploy.yml` smoke-tests every article URL — the playbook passed green on a 404 before, since it only checked `/`, `robots.txt` and `sitemap.xml`.
+
 ### Changed
 - `README.md` opens with what the skill is: an agent skill to start new Django projects, or extend the one you already have.
 - The landing page shrinks its hero buttons on screens under 600px — `size="l"` is 6rem tall, which filled a phone screen — and carries the [Django Webring](https://djangowebring.com) widget above the footer. The site is now verified in Google Search Console and Bing Webmaster Tools, with `sitemap.xml` submitted to both.

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+<script>
+document.documentElement.className =
+  matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to add magic-link login to Django — Django Seedkit</title>
+<meta name="description" content="Passwordless login in Django with django-mail-auth: install, pick a user model, order INSTALLED_APPS so the admin login is replaced, and the uniqueness trap on stock auth.User.">
+<link rel="canonical" href="https://django-seedkit.viewflow.io/blog/django-magic-link-login/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to add magic-link login to Django">
+<meta property="og:description" content="Passwordless login in Django with django-mail-auth: install, pick a user model, order INSTALLED_APPS so the admin login is replaced, and the uniqueness trap on stock auth.User.">
+<meta property="og:url" content="https://django-seedkit.viewflow.io/blog/django-magic-link-login/">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="/assets/blog.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to add magic-link login to Django",
+  "description": "Passwordless login in Django with django-mail-auth: install, pick a user model, order INSTALLED_APPS so the admin login is replaced, and the uniqueness trap on stock auth.User.",
+  "datePublished": "2026-07-29",
+  "dateModified": "2026-07-29",
+  "author": { "@type": "Organization", "name": "Django Seedkit" },
+  "publisher": { "@type": "Organization", "name": "Django Seedkit" },
+  "mainEntityOfPage": "https://django-seedkit.viewflow.io/blog/django-magic-link-login/",
+  "about": { "@type": "SoftwareSourceCode", "programmingLanguage": "Python", "runtimePlatform": "Django" }
+}
+</script>
+</head>
+
+<body>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="/"><span class="leaf" aria-hidden="true">🌱</span> Django Seedkit</a>
+    <nav class="bar-actions">
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark theme">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 0 1-.5-17.99 7.5 7.5 0 0 0 8.49 11.4A9 9 0 0 1 12 21Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm-1-14h2v3h-2V3Zm0 18h2v3h-2v-3ZM3 11h3v2H3v-2Zm15 0h3v2h-3v-2ZM5.6 4.2 7.7 6.3 6.3 7.7 4.2 5.6l1.4-1.4Zm10.7 12.1 2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4Zm2.1-12.1 1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1ZM7.7 17.7l-2.1 2.1-1.4-1.4 2.1-2.1 1.4 1.4Z"/></svg>
+      </button>
+      <a class="bar-link" href="/blog/">Blog</a>
+      <a class="bar-link" href="https://github.com/viewflow/seedkit" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<article>
+  <p class="kicker"><a href="/blog/">Blog</a> · Auth</p>
+  <h1>How to add magic-link login to Django</h1>
+  <p class="lede">The user types an email address, gets a one-time link, clicks it, and is signed in.
+  There is no password column to store, no reset flow to build, and no social providers to register.</p>
+
+  <p><a href="https://django-mail-auth.readthedocs.io/" target="_blank" rel="noopener">django-mail-auth</a>
+  is one small dependency that ships three pieces: <code>mailauth</code> for the backend and the
+  <code>/accounts/login/</code> views, <code>mailauth.contrib.admin</code> to put the Django admin behind
+  the same flow, and <code>mailauth.contrib.user</code> for an <code>EmailUser</code> model with no
+  password field.</p>
+
+<pre><code>uv add django-mail-auth</code></pre>
+
+  <h2>Decide the user model first</h2>
+
+  <p>This one is hard to walk back, because it lands in your first migration. Three routes: use
+  <code>mailauth.contrib.user</code> and set <code>AUTH_USER_MODEL = "mailauth_user.EmailUser"</code>;
+  write your own custom user with <code>email</code> as the <code>USERNAME_FIELD</code>; or stay on stock
+  <code>auth.User</code>.</p>
+
+  <div class="gotcha">
+    <p><strong>Stock <code>auth.User</code> is the one to avoid.</strong> Its <code>email</code> field has
+    no <code>unique=True</code>. When two rows share an address,
+    <code>MailAuthBackend.authenticate()</code> returns whichever it finds first and raises nothing. So
+    anyone who can sign up twice with someone else's address can receive a link that logs them in as that
+    user. If you must stay on stock <code>auth.User</code>, add a <code>UniqueConstraint</code> by
+    migration <em>and</em> a validator on the admin form.</p>
+  </div>
+
+  <h2>Settings</h2>
+
+  <p>Edit <code>INSTALLED_APPS</code> in place here rather than appending. Django resolves admin templates
+  and the admin login view in app order, so the overriding app has to load first — put
+  <code>mailauth.contrib.admin</code> above <code>django.contrib.admin</code>. Get that backwards and the
+  stock password login stays on <code>/admin/</code> with no warning.</p>
+
+<pre><code>INSTALLED_APPS = [
+    <span class="c"># ... existing entries kept ...</span>
+    "mailauth.contrib.admin",   <span class="c"># must precede django.contrib.admin</span>
+    "django.contrib.admin",
+    "mailauth",
+]
+
+AUTHENTICATION_BACKENDS = [
+    "mailauth.backends.MailAuthBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+LOGIN_URL = "mailauth:login"
+LOGIN_REDIRECT_URL = "/"</code></pre>
+
+  <p>Then <code>path("accounts/", include("mailauth.urls"))</code> — no <code>namespace</code> argument,
+  the package declares <code>app_name</code> itself.</p>
+
+  <h2>Templates and email</h2>
+
+  <p>The package ships the email body and subject, and expects you to supply the HTML pages:
+  <code>registration/login.html</code>, <code>registration/login_requested.html</code>, and
+  <code>registration/logged_out.html</code>. It also needs a working email backend. With
+  <code>EMAIL_URL=consolemail://</code> the link prints to <code>runserver</code> output. With nothing
+  configured, Django's SMTP default points at <code>localhost:25</code>, and the login form accepts the
+  address and then nothing arrives.</p>
+
+  <div class="cta">
+    <p>Or hand it to your agent, which reads the wiring above from a maintained reference file and
+    applies it to your repo:</p>
+<pre><code>/django-seedkit add passwordless magic-link login</code></pre>
+    <p>Full wiring, including the <code>default_auto_field</code> pin that keeps
+    <code>makemigrations --check</code> green:
+    <a href="https://github.com/viewflow/seedkit/blob/main/skills/django-seedkit/references/auth.md" target="_blank" rel="noopener">auth.md</a>
+    · <a href="/">What Django Seedkit is</a></p>
+  </div>
+</article>
+</main>
+
+<footer>
+  <span>MIT licensed · Published 2026-07-29</span>
+  <span><a href="/blog/">All articles</a> · <a href="/">Home</a></span>
+</footer>
+
+<script>
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const html = document.documentElement;
+    const dark = html.classList.contains('dark');
+    html.classList.remove('light', 'dark');
+    html.classList.add(dark ? 'light' : 'dark');
+  });
+</script>
+
+</body>
+</html>

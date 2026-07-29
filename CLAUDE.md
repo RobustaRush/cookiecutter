@@ -7,6 +7,24 @@ Layout:
 - `testcases/0[1-9]-*.md` — scripted runs that exercise the skill end-to-end.
 - `train/` — the testcase harness: `run-tests.sh` pipes each testcase through an agent CLI and writes per-run logs; `run-baseline.sh` generates the no-skill control arm; `review-logs.sh` auto-patches the skill from those logs; `agents.sh` is the shared multi-CLI (claude/codex/agy) dispatch the three scripts source.
 - `workspace/` — gitignored scratch where generated projects live; wiped between runs.
+- `site/` — the static landing page and blog, rsynced to django-seedkit.viewflow.io by `ansible/deploy.yml`.
+- `docs/` — plans and notes that aren't published: `articles-plan.md` is the blog backlog.
+
+## Writing blog articles
+
+`site/blog/<slug>/index.html`, one per **integration aspect** — not one per reference file. A reference
+covers a whole topic and often two mutually exclusive packages; an article covers one thing the reader
+wants to do. `docs/articles-plan.md` holds the backlog, the format rules, and what's deliberately
+unpublished.
+
+An article is not a reference in prose. The reference is imperative and rationale-free by design; the
+article supplies exactly what the reference omits — why you'd want this, and what breaks without it.
+Show the minimum snippet and link the reference on GitHub for the full wiring, so the snippet has one
+canonical home.
+
+Every new article needs three companions in the same commit: a row in `site/blog/index.html`, a `<url>`
+in `site/sitemap.xml`, and a line in the blog smoke-test loop in `ansible/deploy.yml`. The deploy
+playbook passes green on a 404 unless the URL is in that loop.
 
 ## Writing reference files
 

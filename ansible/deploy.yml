@@ -123,3 +123,18 @@
         - robots.txt
         - sitemap.xml
       tags: [content]
+
+    # The sitemap advertises these; a green deploy that 404s every article is worse
+    # than a red one. Every new article gets a line here and a <url> in sitemap.xml.
+    - name: Smoke test the blog index and each article
+      ansible.builtin.uri:
+        url: "https://{{ domain }}{{ item }}"
+      loop:
+        - /blog/
+        - /blog/django-magic-link-login/
+        - /blog/django-stripe-checkout/
+        - /blog/django-celery-redis/
+        - /blog/django-tailwind-without-node/
+        - /blog/django-brute-force-lockout/
+        - /assets/blog.css
+      tags: [content]

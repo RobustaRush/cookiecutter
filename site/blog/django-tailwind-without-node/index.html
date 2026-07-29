@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+<script>
+document.documentElement.className =
+  matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to use Tailwind CSS in Django without Node — Django Seedkit</title>
+<meta name="description" content="Tailwind in a Django project with no Node, npm, or webpack: django-tailwind-cli downloads the standalone binary, rebuilds CSS from a management command, and serves it through one template tag.">
+<link rel="canonical" href="https://django-seedkit.viewflow.io/blog/django-tailwind-without-node/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to use Tailwind CSS in Django without Node">
+<meta property="og:description" content="Tailwind in a Django project with no Node, npm, or webpack: django-tailwind-cli downloads the standalone binary, rebuilds CSS from a management command, and serves it through one template tag.">
+<meta property="og:url" content="https://django-seedkit.viewflow.io/blog/django-tailwind-without-node/">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="/assets/blog.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to use Tailwind CSS in Django without Node",
+  "description": "Tailwind in a Django project with no Node, npm, or webpack: django-tailwind-cli downloads the standalone binary, rebuilds CSS from a management command, and serves it through one template tag.",
+  "datePublished": "2026-07-29",
+  "dateModified": "2026-07-29",
+  "author": { "@type": "Organization", "name": "Django Seedkit" },
+  "publisher": { "@type": "Organization", "name": "Django Seedkit" },
+  "mainEntityOfPage": "https://django-seedkit.viewflow.io/blog/django-tailwind-without-node/",
+  "about": { "@type": "SoftwareSourceCode", "programmingLanguage": "Python", "runtimePlatform": "Django" }
+}
+</script>
+</head>
+
+<body>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="/"><span class="leaf" aria-hidden="true">🌱</span> Django Seedkit</a>
+    <nav class="bar-actions">
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark theme">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 0 1-.5-17.99 7.5 7.5 0 0 0 8.49 11.4A9 9 0 0 1 12 21Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm-1-14h2v3h-2V3Zm0 18h2v3h-2v-3ZM3 11h3v2H3v-2Zm15 0h3v2h-3v-2ZM5.6 4.2 7.7 6.3 6.3 7.7 4.2 5.6l1.4-1.4Zm10.7 12.1 2.1 2.1-1.4 1.4-2.1-2.1 1.4-1.4Zm2.1-12.1 1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1ZM7.7 17.7l-2.1 2.1-1.4-1.4 2.1-2.1 1.4 1.4Z"/></svg>
+      </button>
+      <a class="bar-link" href="/blog/">Blog</a>
+      <a class="bar-link" href="https://github.com/viewflow/seedkit" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<article>
+  <p class="kicker"><a href="/blog/">Blog</a> · Frontend</p>
+  <h1>How to use Tailwind CSS in Django without Node</h1>
+  <p class="lede">No <code>package.json</code>, no <code>node_modules</code>, no webpack. Tailwind ships a
+  standalone binary, and <code>django-tailwind-cli</code> downloads it and drives it from a management
+  command.</p>
+
+<pre><code>uv add django-tailwind-cli</code></pre>
+
+<pre><code><span class="c"># config/settings/base.py</span>
+INSTALLED_APPS = [
+    <span class="c"># ...</span>
+    "django_tailwind_cli",
+]
+
+STATICFILES_DIRS = [BASE_DIR / "assets"]
+TAILWIND_CLI_VERSION = "4.3.2"</code></pre>
+
+  <p>Pin the CLI version, and not only in production. Tailwind 4 point releases can change what the build
+  emits, and an unpinned CLI means CI builds different CSS than you did.</p>
+
+  <div class="gotcha">
+    <p><strong>Create the directory before you boot.</strong> Django validates
+    <code>STATICFILES_DIRS</code> at startup and raises if an entry isn't a real directory on disk — so a
+    fresh clone fails on <code>runserver</code> with an error that says nothing about Tailwind. Run
+    <code>mkdir -p assets</code>, and remember that an empty directory won't survive a
+    <code>git clone</code> on its own.</p>
+  </div>
+
+  <h2>The template tag</h2>
+
+  <p>One tag handles both environments: in development it points at the live-rebuilt file, in production
+  at the collected one. No <code>{% if debug %}</code> anywhere.</p>
+
+<pre><code>{% load tailwind_cli %}
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    {% tailwind_css %}
+&lt;/head&gt;
+&lt;body class="bg-gray-50 text-gray-900"&gt;
+    {% block content %}{% endblock %}
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+  <p>Forgetting <code>{% load tailwind_cli %}</code> is the most common way to get an unstyled page —
+  Django renders the missing tag as nothing rather than failing.</p>
+
+  <h2>Development</h2>
+
+<pre><code>python manage.py tailwind runserver</code></pre>
+
+  <p>That runs the watcher and the dev server under one autoreloader, and passes every
+  <code>runserver</code> flag straight through. The first run downloads the binary into
+  <code>.django_tailwind_cli/</code> and generates a source CSS file; both are gitignored for you.</p>
+
+  <p>One Tailwind 4 change worth knowing: templates are discovered through <code>@source</code>
+  directives in that source CSS, not by scanning your project. Add a new templates directory and you add
+  a matching <code>@source</code> line, or its classes get purged out of the build.</p>
+
+  <div class="cta">
+    <p>Or hand it to your agent, which reads the wiring above from a maintained reference file and
+    applies it to your repo:</p>
+<pre><code>/django-seedkit add Tailwind</code></pre>
+    <p>Full wiring, including the Docker build step, DaisyUI, and custom error pages:
+    <a href="https://github.com/viewflow/seedkit/blob/main/skills/django-seedkit/references/tailwind.md" target="_blank" rel="noopener">tailwind.md</a>
+    · <a href="/">What Django Seedkit is</a></p>
+  </div>
+</article>
+</main>
+
+<footer>
+  <span>MIT licensed · Published 2026-07-29</span>
+  <span><a href="/blog/">All articles</a> · <a href="/">Home</a></span>
+</footer>
+
+<script>
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const html = document.documentElement;
+    const dark = html.classList.contains('dark');
+    html.classList.remove('light', 'dark');
+    html.classList.add(dark ? 'light' : 'dark');
+  });
+</script>
+
+</body>
+</html>
