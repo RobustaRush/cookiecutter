@@ -5,7 +5,7 @@ Docs: <https://docs.astral.sh/uv/guides/integration/docker/> · <https://docs.do
 Two artefacts:
 
 - **Production `Dockerfile`** — multi-stage. uv builds the venv in a builder stage; the runtime stage copies the venv into a slim Python image with no uv binary. Smaller image, faster cold start, no build toolchain at runtime.
-- **`docker-compose.yml`** — local services only (Postgres, Redis, Mailpit when wired). Django runs on the host via `uv run manage.py runserver`; the compose file never includes a `web` service.
+- **`docker-compose.yml`** — the local dev stack: Postgres, Redis, Mailpit when wired. Two layouts for `manage.py`, asked as a foundation question: **on the host** (default — `uv run manage.py runserver`, no `web` service) or **in a `web` container** ("Django in the container" below).
 
 ## Image choice
 
@@ -42,7 +42,7 @@ node_modules/
 
 ## Local services — docker-compose.yml
 
-Only the services Django talks to over the network. The web process runs on the host via `uv run manage.py runserver`, so the compose file has no `web` service and nothing to bind-mount source into.
+Host dev loop (the default): only the services Django talks to over the network. The web process runs on the host via `uv run manage.py runserver`, so the compose file has no `web` service and nothing to bind-mount source into.
 
 ```yaml
 name: <project-slug>   # matches pyproject.toml [project].name; isolates volumes/networks per project
@@ -55,7 +55,7 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
-      - "127.0.0.1:5432:5432"   # host Django reaches it via localhost
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"   # host Django reaches it via localhost
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -74,12 +74,109 @@ Add `redis` from `references/redis.md` and `mailpit` from `references/email.md` 
 
 For SQLite, skip the compose file entirely — Django writes to `db.sqlite3` next to `manage.py`.
 
+### Django in the container
+
+Apply this only when the user picked the container dev loop. It trades the host's `uv run` for a dev image that matches production's base, and stops publishing the database to the host.
+
+Add a `dev` target to the same `Dockerfile` that carries the production stages:
+
+```dockerfile
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim AS dev
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+```
+
+The venv sits at `/opt/venv`, outside the bind-mounted `/app`, so `uv` never writes a `.venv/` into the source tree to collide with the host's. `--no-install-project` because the source arrives as a bind mount, not a `COPY`. No `--no-dev` — pytest and ruff run in this container too.
+
+Add the `web` service, and delete the `ports:` block from `db`: nothing on the host connects to Postgres any more.
+
+```yaml
+  web:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - .:/app
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8000}:8000"
+    healthcheck:
+      # slim carries no curl and no wget; a socket connect proves the listener is up
+      test: ["CMD-SHELL", "python -c 'import socket; socket.create_connection((\"localhost\", 8000), 2).close()'"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+```
+
+`.env` addresses the database by service name: `DATABASE_URL=postgres://postgres:postgres@db:5432/postgres`. The service needs no `env_file:` — `.env` sits in the bind mount, so `environ.Env.read_env(BASE_DIR / ".env")` reads it at `/app/.env`.
+
+Every command runs through the container, with `python` and not `uv run` (`/opt/venv/bin` is on `PATH`):
+
+```sh
+docker compose up -d --wait
+docker compose exec web python manage.py migrate
+docker compose logs -f web                       # runserver output and tracebacks
+uv add <pkg> && docker compose up -d --build web  # host uv writes the lock; the rebuild bakes it in
+```
+
+`runserver`'s StatReloader polls, so an edit on the host restarts the server through the bind mount. A new dependency needs the `--build` — the venv lives in the image, not the mount.
+
+An add-on that runs a second long-lived process gets a sibling service on the same `target: dev` build, with its own `command:` and no published port:
+
+```yaml
+  worker:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - .:/app
+    command: celery -A config worker -l info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+```
+
+The same shape covers `celery -A config beat -l info`, `python manage.py db_worker`, `python manage.py rqworker default`, and the Tailwind watcher — one service per process, each with the `command:` its own reference gives. Drop `DJANGO_SETTINGS_MODULE=…` prefixes from those commands: put the value in `.env` instead, since a bind-mounted `.env` is what every service in this stack reads.
+
+Task-runner recipes change with the loop — `references/dev-tasks.md` has the container-loop bodies.
+
+`compilemessages` and `makemessages` need GNU gettext, which the slim image does not carry. When i18n is applied, add it to the `dev` stage (`references/i18n.md`).
+
+### Git worktrees
+
+Every worktree of the repo carries the same pinned `name:`, so a second worktree's `docker compose up` reuses the first one's containers and `pgdata` — silently, with no port error to warn about it. To give a worktree its own stack, set `COMPOSE_PROJECT_NAME` in its `.env` (gitignored, so already per-worktree) and offset each published port:
+
+```sh
+COMPOSE_PROJECT_NAME=<project-slug>-<branch>
+WEB_PORT=8001        # container dev loop — the only port it publishes
+POSTGRES_PORT=5433   # host dev loop — also update the port inside DATABASE_URL
+```
+
+`COMPOSE_PROJECT_NAME` in `.env` overrides the compose file's `name:`, so every `docker compose` command in that worktree targets its own containers, network and volume — no `-p` flag to remember on each invocation, and a `docker compose down -v` there cannot reach the other worktree's data.
+
+In the container dev loop `WEB_PORT` is the whole job: `db` and `redis` publish nothing, and `DATABASE_URL` names the service, so it needs no per-worktree edit. In the host dev loop, offset `POSTGRES_PORT`, `REDIS_PORT` and the Mailpit ports, keep the port inside `DATABASE_URL` equal to `POSTGRES_PORT` (django-environ does not expand `$VAR` inside `.env`), and start the server with `uv run manage.py runserver 8001`.
+
 ### Boot check
 
 ```sh
 docker compose up -d --wait
-uv run manage.py migrate
-uv run manage.py runserver
+uv run manage.py migrate      # container loop: docker compose exec web python manage.py migrate
+uv run manage.py runserver    # container loop: already serving — docker compose logs -f web
 ```
 
 `--wait` blocks on the compose-side healthchecks and exits non-zero if a service

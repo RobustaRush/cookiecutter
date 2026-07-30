@@ -19,7 +19,8 @@ Shared names and shapes the other references conform to. When two references dis
 | `/2` | Celery results (`tasks-celery.md`) |
 | `/3` | django-tasks-rq (`tasks-django-rq.md`) |
 | `/4` | channels layer (`realtime.md`) |
-| `/5` | GlitchTip internal (`error-reporting.md`) |
+
+Db numbers separate keyspaces inside this application. A separate application co-hosted on the box gets its own Redis service, not a slot in this map.
 
 ## Production compose service shape
 

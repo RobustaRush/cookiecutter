@@ -18,7 +18,7 @@ Mise is the recommended pick because it also pins the Python toolchain (`[tools]
 
 ## Task list
 
-Generate one task per command the README would otherwise spell out. Include only the tasks for add-ons the project actually applied.
+Generate one task per command the README would otherwise spell out. Include only the tasks for add-ons the project actually applied. The bodies below assume the host dev loop; for the container loop see "Container dev loop" further down.
 
 | Task | Command |
 | --- | --- |
@@ -43,6 +43,36 @@ Deploy tasks: only generate when §6.6 deploy target was picked. `--env-file dep
   - Exception: the SQLite + Litestream pattern (`references/database.md`) runs `migrate --noinput` inside `entrypoint.sh` on every boot, so skip `deploy-migrate` — `deploy` is a bare `up -d`.
 - `managed` (Fly.io): single `deploy = fly deploy` task — Fly's release command runs migrations, no separate `deploy-migrate` needed.
 - `managed` (Railway / Render): skip — those platforms deploy on `git push`, no task to alias.
+
+## Container dev loop
+
+When `manage.py` runs in a `web` container (`references/docker.md`), every task body changes: `uv run <cmd>` becomes `docker compose exec -T web <cmd>`, and `python` replaces `uv run` inside the container. Three tasks change shape rather than prefix — `install` builds the image, `dev` runs the stack in the foreground, and `worker` / `tailwind` disappear because those are sibling services the stack already starts.
+
+```just
+dc := "docker compose exec -T web"
+
+install:
+    docker compose build
+
+dev:
+    docker compose up
+
+migrate:
+    {{dc}} python manage.py migrate
+
+test:
+    {{dc}} pytest
+
+shell:
+    docker compose exec web python manage.py shell
+
+superuser:
+    docker compose exec web python manage.py createsuperuser
+```
+
+`-T` on every scripted task: without it `exec` demands a TTY and fails wherever there is none — CI, a hook, a `just` recipe run from an editor. `shell` and `createsuperuser` are the exceptions; both need the TTY they would otherwise be denied.
+
+mise, make and poe take the same bodies. Neither mise nor make has `just`'s variable interpolation, so write the prefix out in each task, or set it once — `[env] DC = "docker compose exec -T web"` in `mise.toml`, `DC = docker compose exec -T web` in a `Makefile` — and use `$DC`.
 
 ## mise.toml
 

@@ -60,6 +60,8 @@ uv run manage.py db_worker
 
 Open a second terminal alongside `uv run manage.py runserver`. The worker shares the project venv and reads from the same DB.
 
+In the container dev loop the worker is a compose service on the dev image, not a second terminal — `references/docker.md`, "Django in the container".
+
 ## VPS — docker-compose.prod.yml
 
 Production image has `/opt/venv/bin` on `PATH`:

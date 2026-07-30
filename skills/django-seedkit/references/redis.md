@@ -40,7 +40,7 @@ services:
   redis:
     image: redis:8-alpine
     ports:
-      - "127.0.0.1:6379:6379"   # host Django / workers reach it via localhost
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"   # host Django / workers reach it via localhost
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

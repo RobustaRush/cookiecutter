@@ -1,6 +1,6 @@
 ---
 name: django-seedkit
-version: 26.31.3
+version: 26.31.4
 description: Bootstrap a new Django project, or add components — auth (allauth, magic-link, axes, 2FA), payments (Stripe, dj-stripe), REST (django-modern-rest, django-bolt), Celery / django-tasks, async views & WebSockets (ASGI, uvicorn worker, django-channels, channels-redis), Tailwind+DaisyUI, favicon, SEO meta tags + sitemap, HTML email templates, S3 storage, structlog, healthchecks, Docker, CI, deploy (VPS / Fly / GitHub-SSH), dbbackup, Sentry/Bugsink — to an existing Django codebase. Use whenever the user wants to scaffold Django, integrate a Django package, set up async / WebSockets, set up production deploys, wire CI/CD, or extend an existing Django project.
 ---
 
@@ -33,14 +33,15 @@ Name the groups you'll walk through — Project Foundation (§2), then Developer
 2. Settings layout: single `settings.py` or split `base/local/production`. → `references/new-project.md`
 3. Database: SQLite or PostgreSQL. → `references/database.md`
 4. Request handling: `wsgi` / `asgi` / `asgi+channels`. **Default `wsgi`.** Decide now — Dockerfile `CMD`, server choice, and the `manage.py`/`wsgi.py`/`asgi.py` settings defaults all hinge on this; switching later means rewriting deploy artefacts. See `references/async.md` (and `references/realtime.md` for the channels mode).
-5. If Postgres: host Postgres or Postgres-in-Docker (single-service `docker-compose.yml` for the local DB only). SQLite users skip. → `references/docker.md`
-6. Custom user model: yes / no — decide now (see `references/custom-user.md`).
+5. If Postgres: host Postgres or Postgres-in-Docker (`docker-compose.yml` for the local services). SQLite users skip. → `references/docker.md`
+6. If the project has a `docker-compose.yml` (from step 5): dev loop — `manage.py` on the host via `uv run`, or in a `web` container via `docker compose`. **Default host.** → `references/docker.md`
+7. Custom user model: yes / no — decide now (see `references/custom-user.md`).
 
 Never bundle questions beyond the explicit pair in step 1.
 
 ### 3. Apply the foundation (new projects only)
 
-Generate files from the matching references. `.env` `DATABASE_URL` must match DB + dev mode. If custom user = yes, apply `references/custom-user.md` **before** the boot check. If DB=SQLite, also apply the `production.py` block from `references/database.md` (WAL + IMMEDIATE PRAGMAs) — settings tuning, not a user-facing question.
+Generate files from the matching references. `.env` `DATABASE_URL` must match DB + dev mode + dev loop (`@localhost:5432` on the host, `@db:5432` in the container). If custom user = yes, apply `references/custom-user.md` **before** the boot check. If DB=SQLite, also apply the `production.py` block from `references/database.md` (WAL + IMMEDIATE PRAGMAs) — settings tuning, not a user-facing question.
 
 ### 4. Foundation smoke — agent-driven, new projects only
 
@@ -55,6 +56,8 @@ Run these yourself; do not ask the user. The goal is to catch foundation bugs be
   ```
 
 - Stop the server. Use the recorded PID from the background-launch step (`kill "$PID"`); don't use `kill %1` (no job control in non-interactive bash) or `pkill -f manage.py` (matches the parent harness process).
+
+Container dev loop (§2.6): `docker compose up -d --wait` covers the server too — `web` has its own healthcheck and `depends_on` gates it on Postgres. Then `docker compose exec web python manage.py migrate`, the same curl poll, and `docker compose logs web` on a failure. There is no background PID; `docker compose down` stops it.
 
 If `migrate` or the curl fails, fix the foundation before proceeding to §5. `createsuperuser` and the browser login move to §7 — they need a stable task runner name and a real browser, neither of which exists yet.
 
@@ -125,7 +128,7 @@ Only ask when request handling is `asgi+channels` — Foundation §2.4 for new p
 3. Error reporting: `bugsink` / `sentry` / `glitchtip` / `none`. **Default none.** → `references/error-reporting.md`
 4. GDPR helpers: yes / no. **Default no.** → `references/gdpr.md`
 5. CI on GitHub Actions: yes / no. **Default no.** → `references/ci.md`
-6. Deploy target: `vps` / `managed` / `github-ssh` / `none`. **Default none.** → `references/deploy-vps.md` / `references/deploy-managed.md` / `references/deploy-github-ssh.md` Any target other than `none` applies `references/docker.md` first — all three deploy references build on its multi-stage production image. With `none`, skip the production Dockerfile; the local services compose from §2.5 / §5.3 stands on its own.
+6. Deploy target: `vps` / `managed` / `github-ssh` / `none`. **Default none.** → `references/deploy-vps.md` / `references/deploy-managed.md` / `references/deploy-github-ssh.md` Any target other than `none` applies `references/docker.md` first — all three deploy references build on its multi-stage production image. With `none`, skip the production Dockerfile; the local services compose from §2.5 / §5.3 stands on its own (with the container dev loop, so does the `dev` stage — a `Dockerfile` holding only that stage is the expected output).
    - If `vps` or `github-ssh`: database backups via `django-dbbackup`? **Default yes.** → `references/dbbackup.md` Both deploy to self-managed hosts. Skip for `managed` — those platforms ship native backups. Also skip when DB=SQLite + deploy=`vps` if Litestream is already wired (see `references/database.md`) — Litestream replicates every WAL frame, so dbbackup snapshots are redundant.
 
 ### 7. Final smoke — user-driven, new projects only

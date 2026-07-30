@@ -94,6 +94,8 @@ python manage.py runserver
 
 `tailwind runserver` is a transparent passthrough — every flag of `runserver` (or `runserver_plus`) works.
 
+In the container dev loop, keep the one-process form: make `tailwind runserver` the `web` service's `command:` (`references/docker.md`, "Django in the container"). The download lands in the bind-mounted `.django_tailwind_cli/`, and the standalone CLI is a platform-specific binary — after a switch between the host loop and the container loop, delete that directory so the first run fetches the right one.
+
 First run downloads the CLI to `<BASE_DIR>/.django_tailwind_cli/` and creates an auto-generated `source.css`. The directory is auto-gitignored — don't add it manually.
 
 ## Production build

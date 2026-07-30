@@ -66,6 +66,7 @@ Coverage rules. Use these to regenerate the suite when the skill changes.
    - Database: `sqlite` / `postgres`
    - Request handling: `wsgi` / `asgi` / `asgi+channels`
    - Postgres location (only when `postgres`): `host` / `docker-db-only`
+   - Dev loop: `host` (default) / `container` — `container` appears in case 03 only, where it also covers the worker and beat as sibling services
    - Custom user model (`AUTH_USER_MODEL`): `yes` / `no`
    - Lint (Ruff): `yes` / `no`
    - Test runner: `pytest` / `manage.py test` (default)
@@ -101,7 +102,7 @@ Coverage rules. Use these to regenerate the suite when the skill changes.
 
 5. **Each prompt must be self-contained.** The AI should never need to ask follow-up questions. Phrase the prompt as a complete spec: project name, purpose, every choice listed explicitly.
 
-6. **Each test case must run end-to-end** on the host (`uv run manage.py …`), including `migrate` and the boot check (admin login). Postgres / Redis / Mailpit / MinIO services come from `docker compose up -d --wait`. Add-on-specific checks (e.g. "enqueue and consume a Celery task") belong in the `## Boot check` block.
+6. **Each test case must run end-to-end**, including `migrate` and the boot check (admin login). Commands run on the host (`uv run manage.py …`), except in the container dev loop where they run through `docker compose exec -T web python manage.py …`. Postgres / Redis / Mailpit / MinIO services come from `docker compose up -d --wait`. Add-on-specific checks (e.g. "enqueue and consume a Celery task") belong in the `## Boot check` block.
 
 7. **The reviewer is a separate phase and never sees the build.** `run-tests.sh` runs `## Review` as a fresh `claude -p` from the generated project dir, read-only tools, no skill access, no build context — so file and content assertions live there and the build agent can't game them. Never let the model that built the project grade its own output.
 

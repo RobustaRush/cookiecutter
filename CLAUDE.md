@@ -101,20 +101,11 @@ Generated projects land in `../seedkit-examples/` (the sibling submodule). Per-r
 
 `seedkit/` is a submodule of `RobustaRush/Robusta`. So is `seedkit-examples/` — they're siblings, neither nested in the other (so cloning `seedkit` alone doesn't drag the examples).
 
-After committing inside `seedkit/`, bump the parent pointer:
-
-```sh
-# inside seedkit/
-git push origin main
-# in parent
-git -C .. add seedkit && git -C .. commit -m "chore: bump seedkit/ — <reason>" && git -C .. push origin main
-```
+Commit and push inside `seedkit/` and stop there. Don't touch the parent repo — the pointer bump is the user's, and a checkout of `seedkit` often has no parent repo above it at all.
 
 Refresh the examples after a clean run:
 
 ```sh
 cd seedkit-examples
 git add -A && git commit -m "refresh: $(date -u +%Y-%m-%d) run" && git push
-cd ..
-git add seedkit-examples && git commit -m "chore: bump seedkit-examples/" && git push
 ```

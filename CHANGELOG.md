@@ -2,6 +2,20 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
+## 26.31.4 — 2026-07-30
+
+### Added
+- `docker.md` — a "Git worktrees" section, plus `${POSTGRES_PORT:-5432}`, `${REDIS_PORT:-6379}` and the two `${MAILPIT_*_PORT}` host-port variables in `docker.md` / `redis.md` / `email.md`. A worktree sets `COMPOSE_PROJECT_NAME` and an offset port in its own `.env` and gets its own containers, network and volume; without that, the pinned `name:` makes every worktree share one Postgres and one `pgdata`.
+- Dev loop is now a foundation question (`SKILL.md` §2.6, default unchanged): `manage.py` on the host via `uv run`, or in a `web` container via `docker compose`. `docker.md` gains a "Django in the container" section — a `dev` Dockerfile target that keeps the venv at `/opt/venv` outside the bind mount, a `web` service whose healthcheck opens a socket (the slim image has neither curl nor wget), and `db` publishing no host port at all. The container loop needs one published port, so a worktree offsets `WEB_PORT` and nothing else.
+- `dev-tasks.md` — container-loop task bodies: `uv run <cmd>` becomes `docker compose exec -T web <cmd>`, `install` builds the image, `dev` is `docker compose up`, and the `worker` / `tailwind` tasks go away because those are sibling services. `-T` on every scripted task, omitted for `shell` and `createsuperuser`, which need the TTY. Long-running add-ons point at the sibling-service snippet instead of describing it twice: `tasks-celery.md`, `tasks-django-db.md`, `tasks-django-rq.md`, `tailwind.md`.
+- `i18n.md` — the `dev` stage needs the same `gettext` install the production builder carries. `manage.py compilemessages` checks for `msgfmt` before it looks for `.po` files, so on the slim image it fails outright.
+
+### Testcases and harness
+- Case 03 flips to the container dev loop — `web` + `worker` + `beat` + `db` + `redis`, only `web` publishing a port, every command through `docker compose exec -T web`. It asserts what host-loop cases cannot: that `db` and `redis` publish nothing, that the justfile drives the container, that `worker` and `beat` are still running rather than crash-looped behind a healthy `web`, and that `compilemessages` works (i18n=yes on a slim base is where the missing `gettext` shows up). Cases 04, 08 and 09 keep the host loop.
+
+### Changed
+- `error-reporting.md` — self-hosted GlitchTip gets its own `glitchtip-redis` service instead of db `/5` on the app's Redis, and `conventions.md` drops that row from the map. Redis db numbers namespace keys inside one application; GlitchTip is a separate application, and its Celery keys carry no TTL, so under the app's `--maxmemory-policy volatile-lru` a GlitchTip ingest backlog was unevictable and evicted the app's own cache to make room.
+
 ## 26.31.3 — 2026-07-29
 
 ### Added

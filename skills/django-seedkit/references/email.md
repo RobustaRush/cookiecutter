@@ -200,8 +200,8 @@ services:
     ports:
       # Bind to loopback — MP_SMTP_AUTH_ACCEPT_ANY + ALLOW_INSECURE
       # would otherwise expose an open SMTP relay to the LAN.
-      - "127.0.0.1:1025:1025"  # SMTP
-      - "127.0.0.1:8025:8025"  # web UI
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"  # SMTP
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"    # web UI
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8025/livez"]
       interval: 5s

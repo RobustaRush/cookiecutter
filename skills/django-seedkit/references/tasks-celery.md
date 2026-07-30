@@ -66,6 +66,8 @@ DJANGO_SETTINGS_MODULE=config.settings.local uv run celery -A config worker -l i
 
 Open a second terminal alongside `uv run manage.py runserver`. The worker shares the project venv and the `.env` file. `docker compose up -d redis` (and `db` if Postgres-in-Docker) must already be running.
 
+In the container dev loop the worker is a compose service on the dev image, not a second terminal — `references/docker.md`, "Django in the container". Beat gets its own service the same way.
+
 ## VPS — docker-compose.prod.yml
 
 Production image has `/opt/venv/bin` on `PATH` — call `celery` directly:

@@ -101,8 +101,8 @@ services:
     environment:
       DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD}@glitchtip-db:5432/glitchtip
       SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
-      REDIS_URL: redis://redis:6379/5   # /5 — GlitchTip's slot in the Redis DB map (references/conventions.md)
-    depends_on: [glitchtip-db, redis]
+      REDIS_URL: redis://glitchtip-redis:6379/0
+    depends_on: [glitchtip-db, glitchtip-redis]
 
   glitchtip-worker:
     image: glitchtip/glitchtip:latest
@@ -111,8 +111,14 @@ services:
     environment:                            # GlitchTip's own config, not the app's
       DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD}@glitchtip-db:5432/glitchtip
       SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
-      REDIS_URL: redis://redis:6379/5
-    depends_on: [glitchtip-db, redis]
+      REDIS_URL: redis://glitchtip-redis:6379/0
+    depends_on: [glitchtip-db, glitchtip-redis]
+
+  glitchtip-redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    # GlitchTip's Celery keys carry no TTL, so on the app's redis the
+    # `volatile-lru` maxmemory policy evicts the app's cache to hold them.
 
   glitchtip-db:
     image: postgres:16-alpine

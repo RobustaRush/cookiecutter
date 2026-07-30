@@ -74,6 +74,8 @@ uv run manage.py rqworker default
 
 `settings.RQ["JOB_CLASS"]` is read globally by `rqworker`. No `--job-class` flag needed.
 
+In the container dev loop the worker is a compose service on the dev image, not a second terminal — `references/docker.md`, "Django in the container".
+
 Open a second terminal alongside `uv run manage.py runserver`. `docker compose up -d redis` (and `db` if Postgres-in-Docker) must be running.
 
 ## VPS — docker-compose.prod.yml
