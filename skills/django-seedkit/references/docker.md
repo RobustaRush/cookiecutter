@@ -108,6 +108,7 @@ Add the `web` service, and delete the `ports:` block from `db`: nothing on the h
       target: dev
     volumes:
       - .:/app
+      - /app/.venv   # anonymous volume masking the host venv — see below
     ports:
       - "127.0.0.1:${WEB_PORT:-8000}:8000"
     healthcheck:
@@ -120,6 +121,8 @@ Add the `web` service, and delete the `ports:` block from `db`: nothing on the h
       db:
         condition: service_healthy
 ```
+
+The bare `- /app/.venv` mount is an anonymous volume that hides the host's `.venv/` behind an empty directory. The bind mount carries the whole project root into the container, `.dockerignore` governs the build context and not mounts, and the host keeps a `.venv/` because `uv add` writes one. Any command that walks the tree then descends into it: `manage.py compilemessages` finds 1226 `.po` files there instead of the project's own, recompiles Django's shipped catalogs for every contrib app, and writes the `.mo` files back onto the host through the mount. The mask costs one line and applies to every such command, not just this one.
 
 `.env` addresses the database by service name: `DATABASE_URL=postgres://postgres:postgres@db:5432/postgres`. The service needs no `env_file:` — `.env` sits in the bind mount, so `environ.Env.read_env(BASE_DIR / ".env")` reads it at `/app/.env`.
 
@@ -143,6 +146,7 @@ An add-on that runs a second long-lived process gets a sibling service on the sa
       target: dev
     volumes:
       - .:/app
+      - /app/.venv
     command: celery -A config worker -l info
     depends_on:
       db:

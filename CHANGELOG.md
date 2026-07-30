@@ -12,6 +12,10 @@ Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One 
 
 ### Testcases and harness
 - Case 03 flips to the container dev loop — `web` + `worker` + `beat` + `db` + `redis`, only `web` publishing a port, every command through `docker compose exec -T web`. It asserts what host-loop cases cannot: that `db` and `redis` publish nothing, that the justfile drives the container, that `worker` and `beat` are still running rather than crash-looped behind a healthy `web`, and that `compilemessages` works (i18n=yes on a slim base is where the missing `gettext` shows up). Cases 04, 08 and 09 keep the host loop.
+- Case 03 states its cache backend (`redis`) — the first case to cover that value, and the reason its `django-redis` assertion had been failing: cache is a separate §5.1 question, so a prompt that only asks for "redis (for Celery)" correctly yields no `CACHES` block. It also asserts the `- /app/.venv` mask, in the boot check and in the review. First run: 8/8, 538s, 101 tool calls, 0 fixes.
+
+### Fixed
+- `docker.md` — every service that bind-mounts `.:/app` also carries a `- /app/.venv` anonymous volume. `.dockerignore` governs the build context, not mounts, so the host venv `uv add` creates was reaching the container: a tree walk from `/app` saw 1226 `.po` files instead of the project's own, and `manage.py compilemessages` recompiled Django's shipped catalogs for every contrib app and wrote the `.mo` files back onto the host through the mount. Surfaced by the first case-03 container-loop run.
 
 ### Changed
 - `error-reporting.md` — self-hosted GlitchTip gets its own `glitchtip-redis` service instead of db `/5` on the app's Redis, and `conventions.md` drops that row from the map. Redis db numbers namespace keys inside one application; GlitchTip is a separate application, and its Celery keys carry no TTL, so under the app's `--maxmemory-policy volatile-lru` a GlitchTip ingest backlog was unevictable and evicted the app's own cache to make room.
