@@ -6,7 +6,7 @@ The point is to catch drift between the skill's references and reality (Django v
 
 ## How a test case is structured
 
-Each test case is one `.md` file with three sections — four when it exercises a production artefact. `train/run-tests.sh` extracts them by heading, so the names are exact:
+Each test case is one `.md` file with three sections — four when it exercises a production artefact. The harness (`train/run-tests.sh` in the [seedkit-examples](https://github.com/viewflow/seedkit-examples) repo) extracts them by heading, so the names are exact:
 
 ```
 # <Title>
@@ -110,14 +110,14 @@ Coverage rules. Use these to regenerate the suite when the skill changes.
 
 ## Running a test case
 
-`train/run-tests.sh` is the runner. From inside `seedkit/train/`:
+The runner lives in the sibling [seedkit-examples](https://github.com/viewflow/seedkit-examples) checkout, which reads these files from here. From inside `seedkit-examples/train/`:
 
 ```sh
 ./run-tests.sh              # every case
 ./run-tests.sh 02 07        # specific cases
 ```
 
-Each case runs in two isolated phases — build, then review — streaming into one log per run under `seedkit-examples/logs/`. Generated projects land in `seedkit-examples/`. `train/review-logs.sh` then walks those logs and patches the skill from what they surfaced.
+Each case runs in two isolated phases — build, then review — streaming into one log per run under `seedkit-examples/logs/`. Generated projects land in `seedkit-examples/`. `train/review-logs.sh` then walks those logs and patches this repo from what they surfaced.
 
 ## When to regenerate
 

@@ -126,7 +126,7 @@ A person reading the output catches what automated tests can't.
 
 Hit a bug or something odd? [Open an issue](https://github.com/viewflow/seedkit/issues/new). Even a one-line "this broke" helps.
 
-Cross-model coverage is what we need most. We verify on Claude Sonnet, so point [`train/run-tests.sh`](./train/run-tests.sh) at Opus, Haiku, GPT, or Gemini and share the logs.
+Cross-model coverage is what we need most. We verify on Claude Sonnet, so point [`train/run-tests.sh`](https://github.com/viewflow/seedkit-examples/blob/main/train/run-tests.sh) at Opus, Haiku, GPT, or Gemini and share the logs.
 
 Your review is part of the loop: what you report goes into a [reference file](https://github.com/viewflow/seedkit/tree/main/skills/django-seedkit/references) and every later run gets it.
 
