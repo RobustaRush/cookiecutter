@@ -24,7 +24,7 @@ Task runner (mise / just / make / poe): none.
 Add-ons:
   - Cache backend: none.
   - Background tasks: none.
-  - email: console backend (`EMAIL_URL=consolemail://`).
+  - email: console mailer in local (`MAILERS["default"]` uses Django's console backend).
   - HTML email base template: no.
   - CORS: no.
   - REST API: none.

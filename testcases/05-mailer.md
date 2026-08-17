@@ -71,11 +71,11 @@ Verify these structural facts:
 - Files present: `pyproject.toml`, `manage.py`, `config/settings.py`, `config/urls.py`, `docker-compose.yml`, `.env`, `.env.example`, `.gitignore`.
 - `pyproject.toml` runtime deps include `django-environ`. Dev deps include `django-orbit[mcp]`, `ruff`. `[tool.ruff]` block present.
 - `docker-compose.yml` defines a single `mailpit` service exposing 1025 (SMTP) and 8025 (UI) on localhost.
-- `.env` has `EMAIL_URL=smtp://localhost:1025` (uv-on-host hits the published port, not the docker hostname).
+- `config/settings/local.py` replaces the inherited console mailer with the SMTP backend using `host="localhost"` and `port=1025` (uv-on-host hits the published port, not the Docker hostname).
 
 **Settings**
 - `config/settings.py` uses `env.NOTSET` for the prod branch of `SECRET_KEY` and `DATABASES`.
-- `EMAIL_URL`, `DEFAULT_FROM_EMAIL`, `SERVER_EMAIL` set via `env.email_url(...)` / `env(...)` with the gated-default idiom.
+- `MAILERS["default"]` uses the console backend in development; `DEFAULT_FROM_EMAIL` and `SERVER_EMAIL` use the gated-default idiom.
 - `LOGGING` is at module scope (NOT inside `if DEBUG:`); `if DEBUG:` block only appends the orbit handler.
 - `if DEBUG:` block adds `"orbit"` to `INSTALLED_APPS` and inserts `"orbit.middleware.OrbitMiddleware"` at MIDDLEWARE index 1 (after `SecurityMiddleware`, not before).
 

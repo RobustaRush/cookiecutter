@@ -27,7 +27,7 @@ Add-ons:
   - redis (for Celery)
   - Cache backend: redis (`django-redis`, cache on `/0`).
   - tasks: Celery, with periodic tasks (Celery Beat). Also add a `jobs` app (`manage.py startapp jobs`), register `jobs` in `INSTALLED_APPS`, and add a sample `@shared_task` to `jobs/tasks.py` referenced from `CELERY_BEAT_SCHEDULE`.
-  - email: console backend in local (`EMAIL_URL=consolemail://`).
+  - email: console mailer in local (`MAILERS["default"]` uses Django's console backend).
   - HTML email base template: no.
   - CORS: no.
   - REST API: none.

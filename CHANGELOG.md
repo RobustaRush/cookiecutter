@@ -2,6 +2,11 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
+## 26.34.1 — 2026-08-17
+
+### Changed
+- Target Django 6.1. `email.md` migrates generated settings from deprecated `EMAIL_*` / `env.email_url()` configuration to `MAILERS`, including SMTP, Anymail, Mailpit, named mailers, and connection API replacements. New-project test settings and evaluation fixtures follow the same contract.
+
 ## 26.31.4 — 2026-07-30
 
 ### Added

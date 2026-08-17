@@ -107,7 +107,7 @@ docker run --rm --network shop-smoke \
     -e DJANGO_SECRET_KEY=smoke-secret-not-for-prod-padding-to-fifty-chars-min \
     -e DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost \
     -e DATABASE_URL=postgres://postgres:postgres@shop-smoke-db:5432/shop_db \
-    -e EMAIL_URL=consolemail:// \
+    -e DJANGO_MAIL_HOST=localhost \
     -e DEFAULT_FROM_EMAIL=webmaster@localhost \
     shop-prod python manage.py migrate --noinput
 
@@ -117,7 +117,7 @@ docker run --rm --network shop-smoke \
     -e DJANGO_SECRET_KEY=smoke-secret-not-for-prod-padding-to-fifty-chars-min \
     -e DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost \
     -e DATABASE_URL=postgres://postgres:postgres@shop-smoke-db:5432/shop_db \
-    -e EMAIL_URL=consolemail:// \
+    -e DJANGO_MAIL_HOST=localhost \
     -e DEFAULT_FROM_EMAIL=webmaster@localhost \
     shop-prod python manage.py check --deploy --fail-level WARNING
 
@@ -127,7 +127,7 @@ docker run -d --name shop-smoke-web --network shop-smoke -p 8000:8000 \
     -e DJANGO_SECRET_KEY=smoke-secret-not-for-prod-padding-to-fifty-chars-min \
     -e DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost \
     -e DATABASE_URL=postgres://postgres:postgres@shop-smoke-db:5432/shop_db \
-    -e EMAIL_URL=consolemail:// \
+    -e DJANGO_MAIL_HOST=localhost \
     -e DEFAULT_FROM_EMAIL=webmaster@localhost \
     -e DJANGO_SECURE_SSL_REDIRECT=False \
     shop-prod
@@ -167,7 +167,7 @@ Verify these structural facts:
 **Settings**
 - `config/settings/base.py` uses `env.NOTSET` for the prod branch of `SECRET_KEY` and `DATABASES`.
 - `whitenoise.middleware.WhiteNoiseMiddleware` is present in `config/settings/production.py`'s `MIDDLEWARE` and absent from `base.py`.
-- `base.py` calls `globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))` so local resolves to the console backend and prod reads SMTP from env.
+- `base.py` defines `MAILERS["default"]`: the console backend in local and SMTP with `DJANGO_MAIL_*` options in production.
 - `_stripe.api_key = STRIPE_SECRET_KEY` is set at module scope in `base.py`.
 - `django_browser_reload` app + `django_browser_reload.middleware.BrowserReloadMiddleware` live in `config/settings/local.py` (appended last), absent from `base.py` and `production.py`. `config/urls.py` includes `django_browser_reload.urls` at `__reload__/` gated on `settings.DEBUG`.
 

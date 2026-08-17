@@ -25,7 +25,7 @@ Add-ons:
   - cache backend: sqlite (separate `cache.sqlite3` + `CacheRouter` + `DatabaseCache`)
   - tasks: Django Tasks with the Database backend (`django-tasks-db`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
   - storage: WhiteNoise (static), media volume on the VPS host
-  - email: SMTP in production, console backend in local. Use a placeholder Postmark URL (`EMAIL_URL=smtp+tls://<token>:<token>@smtp.postmarkapp.com:587`); also wire `DEFAULT_FROM_EMAIL`, `SERVER_EMAIL`, `DJANGO_ADMINS`.
+  - email: SMTP in production, console mailer in local. Use placeholder Postmark variables (`DJANGO_MAIL_HOST=smtp.postmarkapp.com`, `DJANGO_MAIL_PORT=587`, `DJANGO_MAIL_USE_TLS=True`, and token username/password); also wire `DEFAULT_FROM_EMAIL`, `SERVER_EMAIL`, `DJANGO_ADMINS`.
   - HTML email base template: no.
   - CORS: no.
   - REST API: none.
@@ -116,7 +116,7 @@ Verify these structural facts:
 - `deploy/docker-compose.prod.yml` defines an `x-logging` anchor (`max-size`) applied as `logging:` on every service.
 - `deploy/docker-compose.prod.yml` defines a single `web` service with `restart: unless-stopped`, mounts a named `sqlite_data:/data` volume, and a container-level healthcheck (python urllib, no curl). **No** `db`, `redis`, or `celery` services. Top-level `volumes:` declares `sqlite_data`.
 - `deploy/.env.prod.example` sets `DATABASE_URL=sqlite:////data/site.sqlite3` and lists the Litestream S3 env vars (`S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`). Dev `.env` keeps the SQLite default (`BASE_DIR/db.sqlite3`).
-- `.github/workflows/test.yml` runs `uv run pytest` against SQLite (no `manage.py migrate` step — `pytest-django` builds the test DB from migrations; no Postgres/Redis services in the workflow). Env block ships `EMAIL_URL=consolemail://`, a `DATABASE_URL` pointing at a SQLite file, `DJANGO_SECRET_KEY` placeholder, `DJANGO_DEBUG=False`.
+- `.github/workflows/test.yml` runs `uv run pytest` against SQLite (no `manage.py migrate` step — `pytest-django` builds the test DB from migrations; no Postgres/Redis services in the workflow). Env block ships `DJANGO_MAIL_HOST=localhost`, a `DATABASE_URL` pointing at a SQLite file, `DJANGO_SECRET_KEY` placeholder, `DJANGO_DEBUG=False`.
 
 **Health**
 - `pages/views.py` (or equivalent — `config/views.py` is fine) defines `liveness` / `readiness`; `path('healthz', ...)` and `path('readyz', ...)` in `config/urls.py`.

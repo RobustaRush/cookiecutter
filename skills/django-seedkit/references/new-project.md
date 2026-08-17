@@ -11,9 +11,9 @@ changes how the project runs — its `.venv` rebuilds from the
 ```sh
 uv init --bare {project_slug}     # --bare: no main.py / README.md / .python-version
 cd {project_slug}
-# Pin to Django 6's floor BEFORE `uv add` — uv init's host pin is too tight.
+# Pin to Django 6.1's floor BEFORE `uv add` — uv init's host pin is too tight.
 sed -i.bak -E 's/^requires-python = .*/requires-python = ">=3.12"/' pyproject.toml && rm pyproject.toml.bak
-uv add 'django>=6.0,<7.0' django-environ
+uv add 'django>=6.1,<7.0' django-environ
 uv run django-admin startproject config .
 ```
 
@@ -89,7 +89,7 @@ emitted in the file you moved — bottom wins, leaving both makes
 locmem email + cache, fast password hasher, eager task backend, in-memory
 storage, `DEBUG=False` to surface template errors. Never restate values
 base sets; never redeclare `MIDDLEWARE` / `INSTALLED_APPS` / `DATABASES`
-/ `EMAIL_BACKEND` / `STORAGES`. Mutate inherited lists in place:
+/ `MAILERS` / `STORAGES`. Mutate inherited lists in place:
 
 ```python
 # config/settings/local.py
@@ -110,7 +110,9 @@ from .base import *
 
 DEBUG = False                              # surface TemplateSyntaxError instead of swallowing it
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
-EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+MAILERS = {
+    "default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"},
+}
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
