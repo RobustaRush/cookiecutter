@@ -1,6 +1,6 @@
 # Database
 
-Docs: <https://django-environ.readthedocs.io/en/latest/types.html#environ-env-db-url> · <https://docs.djangoproject.com/en/stable/ref/databases/> · <https://litestream.io/>
+Docs: <https://django-environ.readthedocs.io/en/latest/types.html#environ-env-db-url> · <https://docs.djangoproject.com/en/6.1/ref/databases/> · <https://litestream.io/>
 
 `django-environ` parses `DATABASE_URL`. No extra config beyond `DATABASES = {"default": env.db("DATABASE_URL")}`.
 
@@ -18,7 +18,7 @@ No extra dependency. Add `db.sqlite3` to `.gitignore`.
 
 ### SQLite production defaults (applied automatically)
 
-When DB=SQLite, the skill writes these into `production.py` at Foundation §3 without asking — they're settings, not a package choice. The cache and tasks questions later in §5 also default to the SQLite-only path (`cache.sqlite3` + `django-tasks-db`). Trade-off: single host (no horizontal scaling), brief deploy blip without external replication. **Requires Django 5.1+** for the `transaction_mode` and `init_command` `OPTIONS` keys.
+When DB=SQLite, the skill writes these into `production.py` at Foundation §3 without asking — they're settings, not a package choice. The cache question later in §5 defaults to `cache.sqlite3`. Trade-off: single host (no horizontal scaling), brief deploy blip without external replication. **Requires Django 5.1+** for the `transaction_mode` and `init_command` `OPTIONS` keys.
 
 `production.py`:
 
@@ -97,10 +97,6 @@ Once during deploy:
 uv run manage.py createcachetable --database cache
 ```
 
-#### Background tasks on SQLite
-
-`django-tasks-db` (`references/tasks-django.md` Backend A) runs against the default DB, no broker needed. Other no-broker options: `django-q2`, `huey` (DB consumer mode).
-
 #### Backup — Litestream
 
 [Litestream](https://litestream.io) streams every WAL frame to S3-compatible storage (R2, B2, Hetzner Object Storage, AWS S3). The container restores from the bucket on boot, then `litestream replicate` wraps `gunicorn`.
@@ -108,12 +104,12 @@ uv run manage.py createcachetable --database cache
 Production `Dockerfile`:
 
 ```dockerfile
-# v0.5.13 — check the latest tag on github.com/benbjohnson/litestream/releases.
+# Resolve the current Litestream release before generating this Dockerfile.
 RUN apt-get update && apt-get install -y --no-install-recommends wget \
  && ARCH=$(dpkg --print-architecture | sed 's/amd64/x86_64/') \
- && wget -q "https://github.com/benbjohnson/litestream/releases/download/v0.5.13/litestream-0.5.13-linux-${ARCH}.deb" \
- && dpkg -i "litestream-0.5.13-linux-${ARCH}.deb" \
- && rm "litestream-0.5.13-linux-${ARCH}.deb" \
+ && wget -q "https://github.com/benbjohnson/litestream/releases/download/v{litestream_version}/litestream-{litestream_version}-linux-${ARCH}.deb" \
+ && dpkg -i "litestream-{litestream_version}-linux-${ARCH}.deb" \
+ && rm "litestream-{litestream_version}-linux-${ARCH}.deb" \
  && rm -rf /var/lib/apt/lists/*
 # Release assets name amd64 as x86_64 while arm64 keeps dpkg's name — the sed
 # keeps the image building on M-series Macs too.

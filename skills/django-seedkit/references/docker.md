@@ -155,7 +155,7 @@ An add-on that runs a second long-lived process gets a sibling service on the sa
         condition: service_healthy
 ```
 
-The same shape covers `celery -A config beat -l info`, `python manage.py db_worker`, `python manage.py rqworker default`, and the Tailwind watcher — one service per process, each with the `command:` its own reference gives. Drop `DJANGO_SETTINGS_MODULE=…` prefixes from those commands: put the value in `.env` instead, since a bind-mounted `.env` is what every service in this stack reads.
+The same shape covers `celery -A config beat -l info` and the Tailwind watcher — one service per process, each with the `command:` its own reference gives. Drop `DJANGO_SETTINGS_MODULE=…` prefixes from those commands: put the value in `.env` instead, since a bind-mounted `.env` is what every service in this stack reads.
 
 Task-runner recipes change with the loop — `references/dev-tasks.md` has the container-loop bodies.
 

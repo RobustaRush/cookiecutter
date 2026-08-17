@@ -1,6 +1,6 @@
 # Request handling — WSGI / ASGI / ASGI + channels
 
-Docs: <https://docs.djangoproject.com/en/stable/topics/async/> · <https://www.uvicorn.org/> · <https://docs.gunicorn.org/en/stable/settings.html#worker-class>
+Docs: <https://docs.djangoproject.com/en/6.1/topics/async/> · <https://www.uvicorn.org/> · <https://docs.gunicorn.org/en/stable/settings.html#worker-class>
 
 Three modes the skill supports. Decide at Foundation §2.4 — switching later means rewriting Dockerfile `CMD`, gunicorn worker class, and the `manage.py`/`wsgi.py`/`asgi.py` defaults.
 

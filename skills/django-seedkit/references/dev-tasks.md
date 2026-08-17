@@ -33,7 +33,7 @@ Generate one task per command the README would otherwise spell out. Include only
 | `fmt` | `uv run ruff format .` *(ruff = yes)* |
 | `typecheck` | `uv run pyright` *(pyright = yes)* |
 | `collectstatic` | `uv run manage.py collectstatic --noinput` |
-| `worker` | `DJANGO_SETTINGS_MODULE=config.settings.local uv run celery -A config worker -l info` *(celery)* or `uv run manage.py db_worker` *(django-tasks)* |
+| `worker` | `DJANGO_SETTINGS_MODULE=config.settings.local uv run celery -A config worker -l info` *(celery)* |
 | `tailwind` | `uv run manage.py tailwind runserver` *(tailwind)* |
 | `deploy-migrate` | one-shot `docker compose … run --rm web python manage.py migrate` *(deploy=vps / github-ssh)* |
 | `deploy` | `deploy-migrate` then `docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d` *(deploy=vps / github-ssh)* or `fly deploy` *(deploy=managed/fly)* |

@@ -1,6 +1,6 @@
 # New Django Project
 
-Docs: <https://django-environ.readthedocs.io/> · <https://docs.djangoproject.com/en/stable/intro/tutorial01/>
+Docs: <https://django-environ.readthedocs.io/> · <https://docs.djangoproject.com/en/6.1/intro/tutorial01/>
 
 Bootstrap with uv on the host. Docker (`references/docker.md`) only
 changes how the project runs — its `.venv` rebuilds from the
@@ -119,7 +119,6 @@ STORAGES = {
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
 # Django Tasks: run inline in the request thread so tests see results without a worker.
-# With django-tasks-db / django-tasks-rq the path is "django_tasks.backends.immediate.ImmediateBackend".
 TASKS = {"default": {"BACKEND": "django.tasks.backends.immediate.ImmediateBackend"}}
 # Celery: same pattern — eager execution in the calling thread, no worker required.
 # Harmless when Celery isn't installed; the keys are just ignored.

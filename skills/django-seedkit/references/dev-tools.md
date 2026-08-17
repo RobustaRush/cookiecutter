@@ -381,7 +381,7 @@ Add after `uv sync --frozen` and before the test step in `.github/workflows/test
 
 ```ini
 [django_migration_linter]
-exclude_apps = silk,account,socialaccount,django_tasks_database
+exclude_apps = silk,account,socialaccount
 ```
 
 A wrong entry is ignored silently — the app stays linted. Read the labels off the running project when `lintmigrations` still flags an app you tried to exclude:

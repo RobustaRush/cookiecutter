@@ -1,6 +1,6 @@
-# 06 — django-silk + Django Tasks (DB backend) + GoatCounter + db-safety
+# 06 — django-silk + core Django Tasks + GoatCounter + db-safety
 
-Covers django-silk profiling, the Database backend for Django Tasks (no Redis), GoatCounter analytics, and the three db-safety tools: django-zeal (N+1 detection), django-migration-linter (CI audit), django-test-migrations (rollback tests).
+Covers django-silk profiling, core Django Tasks, GoatCounter analytics, and the three db-safety tools: django-zeal (N+1 detection), django-migration-linter (CI audit), django-test-migrations (rollback tests).
 
 ## Prompt
 
@@ -8,7 +8,7 @@ Covers django-silk profiling, the Database backend for Django Tasks (no Redis), 
 /django-seedkit
 
 Project name: 06-silk-lab
-Purpose: profile a few request paths with django-silk and run a simple background email task on the DB backend.
+Purpose: profile a few request paths with django-silk and run a simple in-process Django task.
 
 Settings layout: split.
 Database: PostgreSQL.
@@ -24,7 +24,7 @@ Structured logging: no.
 Task runner: none.
 Add-ons:
   - debug: django-silk (profiling + `@silk_profile`)
-  - tasks: Django Tasks with the Database backend (`django-tasks-db`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
+  - tasks: core Django Tasks with the immediate backend. Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
   - analytics: GoatCounter (self-hosted snippet, env-driven site code)
   - email: console mailer in local (`MAILERS["default"]` uses Django's console backend).
   - HTML email base template: no.
@@ -42,7 +42,7 @@ Add-ons:
 
 Production setup: skip.
 
-Run the foundation, the boot check, start `manage.py db_worker` in a second terminal, enqueue one example task and confirm it runs. Hit a profiled view and confirm the request appears under `/silk/`. Run `uv run manage.py lintmigrations`. Run `uv run pytest` to confirm the test runner is wired (no project-specific tests required — `django-test-migrations` is installed for the user to write migration tests later).
+Run the foundation, the boot check, enqueue one example task and confirm it runs in process. Hit a profiled view and confirm the request appears under `/silk/`. Run `uv run manage.py lintmigrations`. Run `uv run pytest` to confirm the test runner is wired (no project-specific tests required — `django-test-migrations` is installed for the user to write migration tests later).
 ```
 
 ## Boot check
@@ -53,10 +53,8 @@ cd 06-silk-lab
 uv run manage.py migrate
 uv run manage.py runserver --noreload &
 RUNSERVER_PID=$!
-uv run manage.py db_worker &
-WORKER_PID=$!
 for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && up=1 && break; sleep 1; done
-[ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; kill "$RUNSERVER_PID" "$WORKER_PID"; exit 1; }
+[ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; kill "$RUNSERVER_PID"; exit 1; }
 curl -sf http://127.0.0.1:8000/silk/ > /dev/null
 test "$(curl -sf http://127.0.0.1:8000/healthz)" = "ok"
 test "$(curl -sf http://127.0.0.1:8000/readyz)" = "ready"
@@ -64,7 +62,7 @@ uv run manage.py show_urls > /dev/null
 uv run manage.py lintmigrations
 uv run ruff check .
 uv run pytest; rc=$?; [ "$rc" -eq 0 ] || [ "$rc" -eq 5 ]   # exit 5 = no tests collected (empty scaffold)
-kill "$RUNSERVER_PID" "$WORKER_PID"
+kill "$RUNSERVER_PID"
 dropdb silk_db
 ```
 
@@ -76,7 +74,7 @@ Verify these structural facts:
 
 **Foundation**
 - Files present: `pyproject.toml`, `manage.py`, `config/settings/{base,local,production,test}.py`, `pytest.ini` or `[tool.pytest.ini_options]` in `pyproject.toml`, `setup.cfg`, `.env`, `.gitignore`.
-- `pyproject.toml` runtime deps include `psycopg[binary]`, `django-tasks-db`. Dev deps include `django-silk`, `django-extensions`, `django-zeal`, `django-migration-linter`, `django-test-migrations`, `pytest`, `pytest-django`, `ruff`. NONE of those dev-only packages appear in runtime deps.
+- `pyproject.toml` runtime deps include `psycopg[binary]`. Dev deps include `django-silk`, `django-extensions`, `django-zeal`, `django-migration-linter`, `django-test-migrations`, `pytest`, `pytest-django`, `ruff`. NONE of those dev-only packages appear in runtime deps.
 
 **Settings**
 - `config/settings/base.py` uses `env.NOTSET` for the prod branch of `SECRET_KEY` and `DATABASES`.

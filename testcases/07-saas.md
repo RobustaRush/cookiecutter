@@ -1,6 +1,6 @@
 # 07 — Production: VPS deploy, SQLite mini-prod, single-stage Dockerfile, Sentry
 
-Covers the SQLite mini-prod path on a single VPS: WAL-tuned `production.py`, separate `cache.sqlite3` for the cache backend, `django-tasks-db` for background work (no broker), Litestream replication to S3, Caddy + single-stage Dockerfile, security settings, Sentry SaaS error reporting, GitHub Actions test CI.
+Covers the SQLite mini-prod path on a single VPS: WAL-tuned `production.py`, separate `cache.sqlite3` for the cache backend, Litestream replication to S3, Caddy + single-stage Dockerfile, security settings, Sentry SaaS error reporting, GitHub Actions test CI.
 
 ## Prompt
 
@@ -23,7 +23,7 @@ Structured logging: yes (`structlog`, JSON in prod / pretty in dev, request-scop
 Task runner: mise.
 Add-ons:
   - cache backend: sqlite (separate `cache.sqlite3` + `CacheRouter` + `DatabaseCache`)
-  - tasks: Django Tasks with the Database backend (`django-tasks-db`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
+  - tasks: none.
   - storage: WhiteNoise (static), media volume on the VPS host
   - email: SMTP in production, console mailer in local. Use placeholder Postmark variables (`DJANGO_MAIL_HOST=smtp.postmarkapp.com`, `DJANGO_MAIL_PORT=587`, `DJANGO_MAIL_USE_TLS=True`, and token username/password); also wire `DEFAULT_FROM_EMAIL`, `SERVER_EMAIL`, `DJANGO_ADMINS`.
   - HTML email base template: no.
@@ -86,7 +86,7 @@ Verify these structural facts:
 - Files present: `pyproject.toml`, `manage.py`, `config/settings/{base,local,production,test}.py`, `config/routers.py`, `Dockerfile` (multi-stage), `deploy/docker-compose.prod.yml`, `deploy/Caddyfile`, `litestream.yml`, `entrypoint.sh`, `mise.toml`, `.github/workflows/test.yml`, `.pre-commit-config.yaml`, `.env`, `.env.example`, `.dockerignore`, `.gitignore`. No `Dockerfile.dev`, no root `docker-compose.yml` (dev runs on the host; SQLite needs no local services).
 - `.pre-commit-config.yaml` declares hook ids `ruff-check`, `ruff-format`, `uv-lock`, `django-upgrade`, `djade`, and `djhtml`. No `rustywind` hook — this project has no Tailwind.
 - `mise.toml` has `[tasks.deploy]` running `docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d` and **no** `deploy-migrate` task — the SQLite + Litestream `entrypoint.sh` runs `migrate --noinput` on every boot (`dev-tasks.md` exception).
-- `pyproject.toml` runtime deps include `django-environ`, `django-tasks`, `django-tasks-db`, `whitenoise`, `django-allauth[mfa]`, `django-axes`, `django-csp`, `sentry-sdk`, `structlog`, `django-structlog`, `gunicorn`. **No** `psycopg`, `celery`, `redis`, `django-dbbackup`. Dev deps include `pytest`, `pytest-django`, `pyright`, `django-stubs`, `django-stubs-ext`, `ruff`, `pre-commit`.
+- `pyproject.toml` runtime deps include `django-environ`, `whitenoise`, `django-allauth[mfa]`, `django-axes`, `django-csp`, `sentry-sdk`, `structlog`, `django-structlog`, `gunicorn`. **No** `psycopg`, `celery`, `redis`, `django-dbbackup`, or a standalone Django Tasks package. Dev deps include `pytest`, `pytest-django`, `pyright`, `django-stubs`, `django-stubs-ext`, `ruff`, `pre-commit`.
 
 **Settings split + SQLite mini-prod**
 - `manage.py` defaults `DJANGO_SETTINGS_MODULE` to `config.settings.local`; `wsgi.py`/`asgi.py` to `config.settings.production`.
@@ -103,10 +103,9 @@ Verify these structural facts:
 - `MIDDLEWARE` ends with `axes.middleware.AxesMiddleware`. `AUTHENTICATION_BACKENDS` starts with `axes.backends.AxesBackend`.
 - `accounts/` URL include in `config/urls.py` mounts both `allauth.urls` and `allauth.mfa.urls`. `MFA_SUPPORTED_TYPES` and `MFA_TOTP_ISSUER` defined. `ACCOUNT_REAUTHENTICATION_REQUIRED = True` in `production.py` only.
 
-**Logging + Sentry + tasks**
+**Logging + Sentry**
 - `structlog` configured in `base.py`. `LOGGING` at module scope. `django_structlog.middlewares.RequestMiddleware` in `MIDDLEWARE` directly after `AuthenticationMiddleware`. `django_structlog` in `INSTALLED_APPS`.
 - `sentry_sdk.init(...)` called from `production.py` only; DSN read from env via the gated default.
-- A registered Django app has `apps.py` with `ready()` importing `tasks`, and a `tasks.py` defining at least one `@task` (from `django_tasks`). `INSTALLED_APPS` includes `django_tasks_db` (Django 6's `django.tasks` is in core — no app entry needed). `TASKS = {"default": {"BACKEND": "django_tasks_db.DatabaseBackend"}}` (or equivalent) in `base.py` or `production.py`.
 
 **Deploy artefacts**
 - `Dockerfile` is multi-stage: `builder` on `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` (with `UV_COMPILE_BYTECODE=1`, `UV_LINK_MODE=copy`, `UV_PROJECT_ENVIRONMENT=/opt/venv`, two-step `uv sync`) and `prod` on `python:3.12-slim-bookworm` (`/opt/venv/bin` on PATH, runs as `django` user, installs the Litestream `.deb` via `wget` + `dpkg -i litestream-v0.3.13-linux-${ARCH}.deb`).

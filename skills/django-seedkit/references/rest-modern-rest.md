@@ -11,10 +11,10 @@ Requires `django>=5.0`, Python 3.11+.
 `msgspec` is the recommended schema engine (fastest JSON path). Add it as the default:
 
 ```sh
-uv add 'django-modern-rest[msgspec,openapi]==0.11.0' 'pyjwt[crypto]'
+uv add 'django-modern-rest[msgspec,openapi]>=0.11,<1.0' 'pyjwt[crypto]'
 ```
 
-Pre-1.0 release — pin it rather than relying on `>=`. `pyjwt` comes along even without dmr's JWT auth: 0.11.0's throttling module imports `jwt` unconditionally, and `manage.py check` dies with `ModuleNotFoundError: No module named 'jwt'` without it. For dmr's JWT auth itself, add the `jwt` extra (`'django-modern-rest[msgspec,openapi,jwt]==0.11.0'`).
+Pre-1.0 release — constrain it below 1.0. `pyjwt` comes along even without dmr's JWT auth: its throttling module imports `jwt` unconditionally. For DMR JWT auth itself, add the `jwt` extra (`'django-modern-rest[msgspec,openapi,jwt]>=0.11,<1.0'`).
 
 If the user wants pydantic schemas instead, swap `msgspec` → `pydantic`. Both extras can co-exist.
 

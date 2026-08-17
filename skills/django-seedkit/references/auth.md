@@ -217,4 +217,4 @@ The package itself ships no models. The migration step exists because the EmailU
 
 ### Testing locally
 
-mailauth needs a working email backend (`references/email.md`). With `EMAIL_URL=consolemail://` the magic link prints to `runserver` stdout; with Mailpit it lands in the Mailpit UI. With nothing configured the SMTP default points at `localhost:25` and login silently fails.
+mailauth needs a configured mailer (`references/email.md`). The default local mailer prints the magic link to `runserver` stdout; with Mailpit it lands in the Mailpit UI.

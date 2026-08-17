@@ -17,7 +17,6 @@ Shared names and shapes the other references conform to. When two references dis
 | `/0` | cache (`redis.md`) |
 | `/1` | Celery broker (`tasks-celery.md`) |
 | `/2` | Celery results (`tasks-celery.md`) |
-| `/3` | django-tasks-rq (`tasks-django-rq.md`) |
 | `/4` | channels layer (`realtime.md`) |
 
 Db numbers separate keyspaces inside this application. A separate application co-hosted on the box gets its own Redis service, not a slot in this map.
@@ -46,7 +45,7 @@ Key order inside a service: `image` → `restart` → `volumes` → `environment
 
 ## Version pins
 
-Pinned artifacts in references age between skill releases: GitHub Actions tags, `.pre-commit-config.yaml` revs, base-image tags, downloaded binaries (Litestream, Tailwind CLI, DaisyUI). Before writing one into the project, resolve the current release — `uv run pre-commit autoupdate` after writing the pre-commit config; `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name` (or the releases page) for actions and binaries. Keep the major version the reference states unless it no longer exists.
+Use compatibility ranges for Python packages and major tags for GitHub Actions. Resolve downloaded binary and vendored-asset versions when generating the project; do not keep patch versions in this skill.
 
 ## Python version
 

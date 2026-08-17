@@ -1,19 +1,14 @@
-# Django Tasks (Django 6.0+)
+# Django Tasks (core)
 
-Docs: <https://docs.djangoproject.com/en/dev/topics/tasks/>
+Docs: <https://docs.djangoproject.com/en/6.1/topics/tasks/>
 
-Django 6.0 ships the `django.tasks` API in core: vendor-neutral `@task` decorator + `enqueue` / `enqueue_on_commit` / result-checking, modelled after `django.core.cache`. Pick a third-party backend for the actual queue. Lighter footprint than Celery (no broker if you pick the DB backend); but no Beat-equivalent scheduler, no chained workflows, no Flower-class UI yet.
+Django ships `django.tasks` in core. It provides task declaration, enqueueing, and result APIs; its built-in backends are `ImmediateBackend` and `DummyBackend`, not a worker queue. Use Celery when work must run asynchronously in a separate worker.
 
-Ask the user:
-
-- **Database** — `references/tasks-django-db.md`. Simplest, no extra infrastructure.
-- **Redis Queue** — `references/tasks-django-rq.md`. Needs Redis; better throughput.
-
-Ask separately about **periodic tasks** (django-crontask) — `references/tasks-django-cron.md` if yes.
+Use the default immediate backend unless the user needs a different explicitly supported backend. For periodic work, apply `references/tasks-django-cron.md`.
 
 ## Register tasks
 
-`django.tasks` does **not** auto-scan apps — a task module is only visible once imported. Register it from `AppConfig.ready()`:
+`django.tasks` does not auto-scan apps. Register a task module from `AppConfig.ready()`:
 
 ```python
 # myapp/apps.py
@@ -31,10 +26,10 @@ When the project already has a domain app, add `<app>/tasks.py` with `@task`-dec
 ## Result status
 
 ```python
-from django.tasks import TaskResultStatus   # `django_tasks` on the backport
+from django.tasks import TaskResultStatus
 
 result = greet.enqueue("world")
 assert result.status == TaskResultStatus.SUCCESSFUL
 ```
 
-The members are `READY`, `RUNNING`, `SUCCESSFUL`, `FAILED`.
+The members are `READY`, `RUNNING`, `SUCCESSFUL`, and `FAILED`.

@@ -32,7 +32,7 @@ PII / scrubbing — see `references/gdpr.md`.
 
 ## Background workers
 
-The same `sentry_sdk.init` covers worker processes — they load the same settings module. Celery / RQ integrations auto-enable when the package is installed, and the SDK's logging integration reports any ERROR-level `logging` call as an event; `django-tasks` workers log failed tasks at that level, so task failures reach the tracker without extra wiring. After deploy, enqueue a task that raises and confirm it shows up.
+The same `sentry_sdk.init` covers Celery worker processes because they load the same settings module. After deploy, run a task that raises and confirm it appears in the tracker.
 
 ## .env
 

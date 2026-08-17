@@ -25,7 +25,7 @@ primary_region = "iad"
 #                              return 400 for every request.
 #   DJANGO_CSRF_TRUSTED_ORIGINS — https://<host> for each allowed host
 #   DATABASE_URL             — auto-set by `fly postgres attach`
-#   EMAIL_URL                — see references/email.md
+#   DJANGO_MAIL_HOST          — see references/email.md
 #   SENTRY_DSN               — if error-reporting wired
 
 [deploy]
@@ -77,7 +77,9 @@ fly secrets set \
     DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))') \
     DJANGO_ALLOWED_HOSTS=$(fly status -j | jq -r '.Hostname'),example.com \
     DJANGO_CSRF_TRUSTED_ORIGINS=https://example.com \
-    EMAIL_URL=consolemail://     # replace with real provider URL
+    DJANGO_MAIL_HOST=smtp.example.com \
+    DJANGO_MAIL_USERNAME=<username> \
+    DJANGO_MAIL_PASSWORD=<password>
 fly deploy
 ```
 

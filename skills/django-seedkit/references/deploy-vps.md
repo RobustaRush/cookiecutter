@@ -80,8 +80,8 @@ errors. Provide every var:
 
 ```sh
 # Django
-DJANGO_SETTINGS_MODULE=config.settings.production   # the rqworker / db_worker
-                                                    # commands inherit this.
+DJANGO_SETTINGS_MODULE=config.settings.production   # Celery worker commands
+                                                    # inherit this.
                                                     # manage.py defaults to
                                                     # config.settings.local —
                                                     # without this, prod runs

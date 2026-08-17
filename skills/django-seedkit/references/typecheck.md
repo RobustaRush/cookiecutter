@@ -92,7 +92,7 @@ Most third-party packages don't ship stubs. With `useLibraryCodeForTypes = true`
 | sentry-sdk (`references/error-reporting.md`) | none — ships types |
 | django-modern-rest / django-bolt (`references/rest-*.md`) | none — both ship types |
 
-Allauth, axes, django-tasks, django-tailwind-cli, dj-stripe — no stubs, fall back to `useLibraryCodeForTypes`.
+Allauth, axes, django-tailwind-cli, dj-stripe — no stubs, fall back to `useLibraryCodeForTypes`.
 
 ## Pragmatics
 

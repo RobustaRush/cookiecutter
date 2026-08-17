@@ -1,6 +1,6 @@
-# 09 — Production: GitHub Actions SSH deploy, Bugsink, Umami, Django Tasks (RQ)
+# 09 — Production: GitHub Actions SSH deploy, Bugsink, Umami
 
-Covers the GitHub-Actions-over-SSH deploy path, self-hosted Bugsink for error reporting, Umami analytics, Django Tasks with the Redis Queue backend, GDPR scaffolding, and CI.
+Covers the GitHub-Actions-over-SSH deploy path, self-hosted Bugsink for error reporting, Umami analytics, GDPR scaffolding, and CI.
 
 ## Prompt
 
@@ -24,7 +24,7 @@ Structured logging: yes (`structlog`, JSON in prod / pretty in dev, request-scop
 Task runner: mise.
 Add-ons:
   - redis
-  - tasks: Django Tasks with the Redis Queue backend (`django-tasks-rq`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
+  - tasks: none.
   - analytics: Umami (self-hosted, env-driven website ID and host)
   - email: none (this project does not send transactional mail and the test verifies the skip path).
   - CORS: no.
@@ -57,14 +57,12 @@ docker compose up -d                    # db + redis only
 uv run manage.py migrate
 uv run manage.py runserver --noreload &
 RUNSERVER_PID=$!
-uv run manage.py rqworker default &
-WORKER_PID=$!
 for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && up=1 && break; sleep 1; done
-[ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; kill "$RUNSERVER_PID" "$WORKER_PID"; exit 1; }
+[ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; kill "$RUNSERVER_PID"; exit 1; }
 test "$(curl -sf http://127.0.0.1:8000/healthz)" = "ok"
 test "$(curl -sf http://127.0.0.1:8000/readyz)" = "ready"
 docker build --target prod -t 09-ssh-deploy:test .
-kill "$RUNSERVER_PID" "$WORKER_PID"
+kill "$RUNSERVER_PID"
 docker compose down -v
 docker rmi 09-ssh-deploy:test
 ```
@@ -78,7 +76,7 @@ Verify these structural facts:
 **Foundation**
 - Files present: `pyproject.toml`, `manage.py`, `config/settings/{base,local,production,test}.py`, `Dockerfile` (multi-stage), `docker-compose.yml` (local services only — `db`, `redis`; no `web` / `worker`), `deploy/docker-compose.prod.yml`, `deploy/.env.prod.example`, `mise.toml`, `.github/workflows/{test.yml,deploy.yml}`, `.env`, `.env.example`, `.dockerignore`, `.gitignore`. No `Dockerfile.dev`, no `docker-compose.override.yml`.
 - `mise.toml` has `[tasks.deploy-migrate]` and `[tasks.deploy]` (with `depends = ["deploy-migrate"]`) targeting `deploy/docker-compose.prod.yml`, both passing `--env-file deploy/.env.prod`.
-- `pyproject.toml` runtime deps include `psycopg[binary]`, `django-tasks-rq`, `django-rq`, `django-csp`, `django-dbbackup`, `django-storages[s3]` (or `boto3`), `sentry-sdk`, `structlog`, `django-structlog`, `gunicorn`. (`django.tasks` is built into Django 6 — no separate `django-tasks` package.) Dev deps include `pytest`, `pytest-django`, `ruff`.
+- `pyproject.toml` runtime deps include `psycopg[binary]`, `django-csp`, `django-dbbackup`, `django-storages[s3]` (or `boto3`), `sentry-sdk`, `structlog`, `django-structlog`, `gunicorn`. Dev deps include `pytest`, `pytest-django`, `ruff`.
 - `pyproject.toml` does NOT list `django-axes`, `django-allauth`, `django-mail-auth`, or anymail/email packages — auth = none, email = none.
 
 **Settings**
@@ -87,11 +85,6 @@ Verify these structural facts:
 - `csp.middleware.CSPMiddleware` and `CONTENT_SECURITY_POLICY` in `production.py` only. `script-src` includes the Umami host (resolved from env at runtime). No `'unsafe-inline'` in `script-src`.
 - `INSTALLED_APPS` in `base.py` does NOT contain `axes`, `allauth`. `dbbackup` is added only inside the `if not DEBUG:` block in `production.py`.
 - `production.py` `if not DEBUG:` block adds `dbbackup` to `INSTALLED_APPS`, sets `DBBACKUP_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"` and `DBBACKUP_STORAGE_OPTIONS` reading bucket/key/secret from env. `DBBACKUP_BUCKET` listed in `.env.example`.
-
-**Tasks**
-- `INSTALLED_APPS` includes `django_rq` and `django_tasks_rq`. `RQ_QUEUES` defined; top-level `RQ = {"JOB_CLASS": "django_tasks_rq.Job"}`.
-- A registered Django app has `apps.py` with `ready()` importing `tasks`, and a `tasks.py` defining at least one `@task`.
-- `deploy/docker-compose.prod.yml` defines a `worker` service running `python manage.py rqworker default` (prod-side; dev runs the worker on the host).
 
 **Logging + Sentry/Bugsink**
 - `structlog` configured in `base.py`. `LOGGING` at module scope. `django_structlog.middlewares.RequestMiddleware` in `MIDDLEWARE` directly after `AuthenticationMiddleware`. `django_structlog` in `INSTALLED_APPS`.

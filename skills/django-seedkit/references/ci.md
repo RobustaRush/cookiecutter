@@ -33,7 +33,7 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
-      # Add this block only when redis is wired (cache / celery / django-tasks-rq).
+      # Add this block only when Redis is wired (cache or Celery).
       redis:
         image: redis:8
         ports:
@@ -57,10 +57,10 @@ jobs:
       DJANGO_ALLOWED_HOSTS: "*"
       # `DEBUG=False` triggers the gated `env.NOTSET` branch on every
       # required env var. Provide safe placeholders so settings load:
-      EMAIL_URL: consolemail://
+      DJANGO_MAIL_HOST: localhost
       DEFAULT_FROM_EMAIL: test@example.com
       SERVER_EMAIL: test@example.com
-      REDIS_URL: redis://localhost:6379       # only when redis / celery / django-tasks-rq is wired
+      REDIS_URL: redis://localhost:6379       # only when Redis or Celery is wired
       POSTMARK_SERVER_TOKEN: ci-placeholder   # only when django-anymail[postmark] is wired
       ANYMAIL_WEBHOOK_SECRET: ci-placeholder  # only when the Anymail webhook URL is wired
       AWS_ACCESS_KEY_ID: ci-placeholder       # only when django-dbbackup is wired
@@ -70,8 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Pin the latest release from github.com/astral-sh/setup-uv/releases.
-      - uses: astral-sh/setup-uv@v8.2.0
+      - uses: astral-sh/setup-uv@v10
         with:
           enable-cache: true
 

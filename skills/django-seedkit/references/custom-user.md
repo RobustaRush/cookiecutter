@@ -1,6 +1,6 @@
 # Custom User Model
 
-Docs: <https://docs.djangoproject.com/en/stable/topics/auth/customizing/#substituting-a-custom-user-model>
+Docs: <https://docs.djangoproject.com/en/6.1/topics/auth/customizing/#substituting-a-custom-user-model>
 
 Set `AUTH_USER_MODEL` **before the first `migrate`**. Adding it later requires data migrations and breaks foreign keys to `auth.User`.
 

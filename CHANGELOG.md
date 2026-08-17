@@ -2,6 +2,12 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
+## 26.34.2 — 2026-08-17
+
+### Changed
+- Remove the standalone Django Tasks backport and DB/RQ adapters. Use core `django.tasks`; keep Celery as the worker-queue option and use `django-crontask` with the core API for periodic work.
+- Remove remaining deprecated email configuration, patch pins, and drifting Django documentation links.
+
 ## 26.34.1 — 2026-08-17
 
 ### Changed

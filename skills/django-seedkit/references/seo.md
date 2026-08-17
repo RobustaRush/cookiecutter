@@ -1,6 +1,6 @@
 # SEO — meta tags + sitemap
 
-Docs: <https://docs.djangoproject.com/en/stable/ref/contrib/sitemaps/> · <https://ogp.me/>
+Docs: <https://docs.djangoproject.com/en/6.1/ref/contrib/sitemaps/> · <https://ogp.me/>
 
 Stock Django pages ship no `<meta name="description">`, no Open Graph tags, and no sitemap. Search results fall back to guessed snippets, and links pasted into chat apps or social feeds show a bare URL instead of a preview card. One template block plus `django.contrib.sitemaps` covers both.
 

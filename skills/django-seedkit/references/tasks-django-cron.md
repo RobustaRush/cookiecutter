@@ -2,7 +2,7 @@
 
 Docs: <https://github.com/codingjoe/django-crontask>
 
-Add this only if the user needs scheduled tasks. Works alongside either Database or Redis Queue backend.
+Add this only if the user needs scheduled core Django Tasks.
 
 ## Install
 
@@ -22,7 +22,7 @@ INSTALLED_APPS = [
 ## Define
 
 ```python
-from django_tasks import task
+from django.tasks import task
 from crontask import cron
 
 @cron("0 8 * * *")  # daily at 08:00 (crontab syntax)
@@ -31,15 +31,15 @@ def daily_report() -> None:
     ...
 ```
 
-`crontask`'s `@cron` calls `task.enqueue()` on whatever it wraps, so the decorated task must resolve through the same backend as the Database/Redis Queue worker — import `task` from the `django_tasks` backport, not Django 6's stdlib `django.tasks`.
+`crontask` schedules the core `django.tasks` task through its configured backend.
 
-## Local — run on the host
+## Run
 
 ```sh
 uv run manage.py crontask
 ```
 
-Third terminal alongside the worker and runserver.
+Run it as a separate process alongside the web process.
 
 ## VPS — docker-compose.prod.yml
 
@@ -58,4 +58,4 @@ services:
 
 ## Managed platforms
 
-Add a third process for cron alongside web and worker.
+Add a cron process alongside the web process.

@@ -1,7 +1,7 @@
 ---
 name: django-seedkit
-version: 26.34.1
-description: Bootstrap a new Django project, or add components — auth (allauth, magic-link, axes, 2FA), payments (Stripe, dj-stripe), REST (django-modern-rest, django-bolt), Celery / django-tasks, async views & WebSockets (ASGI, uvicorn worker, django-channels, channels-redis), Tailwind+DaisyUI, favicon, SEO meta tags + sitemap, HTML email templates, S3 storage, structlog, healthchecks, Docker, CI, deploy (VPS / Fly / GitHub-SSH), dbbackup, Sentry/Bugsink — to an existing Django codebase. Use whenever the user wants to scaffold Django, integrate a Django package, set up async / WebSockets, set up production deploys, wire CI/CD, or extend an existing Django project.
+version: 26.34.2
+description: Bootstrap a new Django project, or add components — auth (allauth, magic-link, axes, 2FA), payments (Stripe, dj-stripe), REST (django-modern-rest, django-bolt), Celery / Django Tasks, async views & WebSockets (ASGI, uvicorn worker, django-channels, channels-redis), Tailwind+DaisyUI, favicon, SEO meta tags + sitemap, HTML email templates, S3 storage, structlog, healthchecks, Docker, CI, deploy (VPS / Fly / GitHub-SSH), dbbackup, Sentry/Bugsink — to an existing Django codebase. Use whenever the user wants to scaffold Django, integrate a Django package, set up async / WebSockets, set up production deploys, wire CI/CD, or extend an existing Django project.
 ---
 
 ## How this skill works
@@ -92,8 +92,8 @@ For new projects: ask every question. For existing projects: only ask about comp
 
 #### 5.4 Background & Email
 
-1. Background tasks: `celery` / `django-tasks-db` / `django-tasks-rq` / `none`. **Default `django-tasks-db` when DB=SQLite, else `none`.** → `references/tasks-celery.md` / `references/tasks-django.md` (dispatches to `-db.md` / `-rq.md`)
-   - If `django-tasks-db` or `django-tasks-rq`: periodic tasks via `django-crontask`? **Default no.** `django.tasks` ships no Beat equivalent — see `references/tasks-django-cron.md`.
+1. Background tasks: `celery` / `django.tasks` / `none`. **Default none.** Django Tasks is the core API with in-process backends; use Celery for a worker queue. → `references/tasks-celery.md` / `references/tasks-django.md`
+   - If `django.tasks`: periodic tasks via `django-crontask`? **Default no.** → `references/tasks-django-cron.md`.
 2. Email backend: `console` / `smtp` / `mailpit` / `anymail` / `none`. **Always ask** — every project sends mail eventually (password resets, error reports, allauth verification). → `references/email.md`
    - If backend ≠ none: HTML email base template + `send_test_email` command? **Default no.**
 
@@ -161,7 +161,7 @@ Each rule has a *why* so you can judge edge cases.
 
 **Snippet integrity**
 
-- Use snippets verbatim. Don't drop lines that look obvious or redundant — `DEFAULT_AUTO_FIELD`, gated env defaults, top-level `RQ = {"JOB_CLASS": ...}`. They look optional and are not.
+- Use snippets verbatim. Don't drop lines that look obvious or redundant — `DEFAULT_AUTO_FIELD` and gated env defaults. They look optional and are not.
 - The fail-fast idiom for env vars is `default=<dev-value> if DEBUG else env.NOTSET`. `env.NOTSET` raises `ImproperlyConfigured` naming the variable when the env var is missing in prod.
 - Don't reimplement `django-environ` (no manual `.split(",")`, no leftover `import os`).
 
@@ -173,12 +173,12 @@ Each rule has a *why* so you can judge edge cases.
 
 - Always `DJANGO_DEBUG` / `DJANGO_SECRET_KEY` / `DJANGO_ALLOWED_HOSTS` — these names are referenced across many references.
 - When adding an add-on, append every env var its reference reads to `.env.example` so the file stays the canonical list.
-- `.env.example` comments belong on their own lines, never trailing the value. `django-environ` reads everything after `=` verbatim, so `EMAIL_URL=consolemail://    # dev` becomes the literal URL `consolemail://    # dev` and breaks any deploy that copies the file.
+- `.env.example` comments belong on their own lines, never trailing the value. `django-environ` reads everything after `=` verbatim.
 
 **App layout**
 
 - Don't create an app dir named after the project unless asked.
-- `tasks.py` must live inside a registered Django app, not at project root or under `config/`. Both Celery autodiscovery and `django-tasks` only scan `INSTALLED_APPS`. When a fresh project has no app yet, **don't auto-create one** — wire the task settings / services / Dockerfile so the worker boots and idles, then tell the user where to drop `@task` functions once they create a domain app. Auto-creating `jobs/` dictates app layout the user may not want.
+- `tasks.py` must live inside a registered Django app, not at project root or under `config/`. Import it from `AppConfig.ready()` so Django Tasks registers the decorated functions. When a fresh project has no app yet, don't auto-create one unless the user asked for a task example.
 
 **After `startproject` / `uv init` / `startapp`**
 

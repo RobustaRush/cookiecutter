@@ -31,10 +31,9 @@ The directory must exist on disk before `runserver` boots — Django raises at s
 mkdir -p assets
 ```
 
-Pin the CLI version (always — not just in prod) so a Tailwind 4.x point release can't change the build out from under CI. Set in `base.py` or single-file settings:
+Use the current compatible Tailwind 4 release when generating the project. Do not hardcode its patch version in this skill. Set the custom source path in `base.py` or single-file settings:
 
 ```python
-TAILWIND_CLI_VERSION = "4.3.2"  # check the latest tag on github.com/tailwindlabs/tailwindcss/releases
 TAILWIND_CLI_SRC_CSS = "tailwind-src/css/source.css"   # custom source — outside STATICFILES_DIRS
 ```
 
@@ -146,14 +145,14 @@ We follow the upstream Django guide (<https://daisyui.com/docs/install/django/>)
 
 ### 1. Drop the DaisyUI bundle next to the source CSS
 
-DaisyUI ships single-file `.mjs` plugin bundles per release. Place them under `tailwind-src/css/` — **outside `STATICFILES_DIRS`**. `CompressedManifestStaticFilesStorage` walks every file in `STATICFILES_DIRS` and tries to resolve each `@import` / `@plugin` reference as a static-file URL; with `source.css` inside, `collectstatic` fails with `MissingFileError: css/tailwindcss`. Keep only the compiled `tailwind.css` output under `assets/`.
+DaisyUI ships single-file `.mjs` plugin bundles per release. Resolve a compatible current DaisyUI 5 release before writing these commands. Place them under `tailwind-src/css/` — **outside `STATICFILES_DIRS`**. `CompressedManifestStaticFilesStorage` walks every file in `STATICFILES_DIRS` and tries to resolve each `@import` / `@plugin` reference as a static-file URL; with `source.css` inside, `collectstatic` fails with `MissingFileError: css/tailwindcss`. Keep only the compiled `tailwind.css` output under `assets/`.
 
 ```sh
 mkdir -p tailwind-src/css
 curl -fsSL -o tailwind-src/css/daisyui.mjs \
-    https://github.com/saadeghi/daisyui/releases/download/v5.6.13/daisyui.mjs
+    https://github.com/saadeghi/daisyui/releases/download/v{daisyui_version}/daisyui.mjs
 curl -fsSL -o tailwind-src/css/daisyui-theme.mjs \
-    https://github.com/saadeghi/daisyui/releases/download/v5.6.13/daisyui-theme.mjs
+    https://github.com/saadeghi/daisyui/releases/download/v{daisyui_version}/daisyui-theme.mjs
 ```
 
 Commit both files — they're vendored assets, not build artefacts. Reproducible builds depend on the exact bundle that was committed.

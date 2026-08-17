@@ -8,7 +8,7 @@ Before asking any §5/§6 question, build a map of what's already wired. Read ea
 
 **Stack basics**
 
-- `pyproject.toml` — Python version pin, declared deps and `--dev` deps. Notable signals: `ruff`, `pytest`, `pytest-django`, `pyright`, `django-stubs`, `pre-commit`, `django-extensions`, `structlog`, `django-allauth`, `django-axes`, `dj-stripe`, `stripe`, `django-modern-rest`, `django-bolt`, `celery`, `django-tasks`, `django-redis`, `whitenoise`, `django-storages`, `django-cors-headers`, `django-csp`, `sentry-sdk`, `django-dbbackup`.
+- `pyproject.toml` — Python version pin, declared deps and `--dev` deps. Notable signals: `ruff`, `pytest`, `pytest-django`, `pyright`, `django-stubs`, `pre-commit`, `django-extensions`, `structlog`, `django-allauth`, `django-axes`, `dj-stripe`, `stripe`, `django-modern-rest`, `django-bolt`, `celery`, `django-redis`, `whitenoise`, `django-storages`, `django-cors-headers`, `django-csp`, `sentry-sdk`, `django-dbbackup`.
 - `manage.py` — confirms Django, surfaces the settings module path.
 - Settings — locate the active module (single `settings.py`, split `base/local/production`, or custom). Read `INSTALLED_APPS`, `MIDDLEWARE`, `AUTH_USER_MODEL`, `DATABASES`, `CACHES`, `STORAGES`, email backend, `LANGUAGES`, security flags, `CSP_*` keys.
 - `.env.example` and `.env` — which env vars are wired.

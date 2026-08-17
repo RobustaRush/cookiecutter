@@ -1,6 +1,6 @@
-# 04 — ASGI + channels, S3 storage, Django-Tasks (RQ), devcontainer
+# 04 — ASGI + channels, S3 storage, devcontainer
 
-Covers ASGI + django-channels (WebSockets with channels-redis layer), S3-compatible object storage, the Django Tasks API with the Redis Queue backend, and a uv-on-host devcontainer.
+Covers ASGI + django-channels (WebSockets with channels-redis layer), S3-compatible object storage, and a uv-on-host devcontainer.
 
 ## Prompt
 
@@ -8,7 +8,7 @@ Covers ASGI + django-channels (WebSockets with channels-redis layer), S3-compati
 /django-seedkit
 
 Project name: 04-media-vault
-Purpose: media-heavy app where uploads land in S3, processing runs as Redis-queued background tasks, and clients subscribe over WebSockets for status updates.
+Purpose: media-heavy app where uploads land in S3 and clients subscribe over WebSockets for status updates.
 
 Settings layout: split.
 Database: PostgreSQL.
@@ -26,7 +26,6 @@ Task runner: none.
 Add-ons:
   - redis
   - storage: S3-compatible (use MinIO in local Compose; configure via env)
-  - tasks: Django Tasks with the Redis Queue backend (`django-tasks-rq`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
   - real-time channel layer: `channels-redis` (reuse the same Redis service). Add an `EchoConsumer` (`AsyncJsonWebsocketConsumer`) that echoes received JSON back to the sender, routed at `/ws/echo/` in `config/routing.py`. Wire `config/asgi.py` with `ProtocolTypeRouter` + `AllowedHostsOriginValidator` + `AuthMiddlewareStack`.
   - email: console mailer in local (`MAILERS["default"]` uses Django's console backend).
   - HTML email base template: no.
@@ -40,7 +39,7 @@ Add-ons:
 
 Production setup: skip.
 
-Generate `docker-compose.yml` with services `db`, `redis`, `minio` (local services only — Django, the rqworker, and uvicorn run on the host). Run the foundation, `docker compose up -d`, `uv run uvicorn config.asgi:application --reload --host 0.0.0.0` (HTTP + WS share one process in dev — `manage.py runserver` doesn't upgrade WebSockets), `uv run manage.py rqworker default` in a separate terminal, migrate, createsuperuser, and confirm a sample task enqueues and a WebSocket round-trip works.
+Generate `docker-compose.yml` with services `db`, `redis`, `minio` (local services only; Django and uvicorn run on the host). Run the foundation, `docker compose up -d`, `uv run uvicorn config.asgi:application --reload --host 0.0.0.0` (HTTP + WS share one process in dev — `manage.py runserver` doesn't upgrade WebSockets), migrate, createsuperuser, and confirm a WebSocket round-trip works.
 ```
 
 ## Boot check
@@ -53,10 +52,8 @@ uv run manage.py createsuperuser --noinput || true
 # Start uvicorn on the host in the background — runserver doesn't upgrade WS.
 uv run uvicorn config.asgi:application --host 0.0.0.0 --port 8000 &
 UVICORN_PID=$!
-uv run manage.py rqworker default &
-WORKER_PID=$!
 for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null && up=1 && break; sleep 1; done
-[ -n "$up" ] || { echo "BOOT CHECK FAILED: uvicorn never came up"; kill "$UVICORN_PID" "$WORKER_PID"; exit 1; }
+[ -n "$up" ] || { echo "BOOT CHECK FAILED: uvicorn never came up"; kill "$UVICORN_PID"; exit 1; }
 curl -sf -X POST http://127.0.0.1:8000/api/media/ \
   -H 'content-type: application/json' \
   -d '{"filename":"a.png","size":42}' > /dev/null
@@ -83,7 +80,7 @@ asyncio.run(main())
 "
 uv run ruff check .
 uv run pyright
-kill "$UVICORN_PID" "$WORKER_PID"
+kill "$UVICORN_PID"
 docker compose down -v
 ```
 
@@ -95,15 +92,15 @@ Verify these structural facts:
 
 **Foundation**
 - Files present: `pyproject.toml`, `manage.py`, `config/settings/{base,local,production}.py`, `config/asgi.py`, `config/routing.py`, `docker-compose.yml`, `.env`, `.env.example`, `.gitignore`. No `Dockerfile.dev` (dev runs on the host).
-- `docker-compose.yml` defines local services only — `db`, `redis`, `minio`. No `web` and no `worker` service: Django + rqworker + uvicorn run on the host via `uv run …`. Named volumes for `pgdata` and `miniodata`.
-- `pyproject.toml` runtime deps include `psycopg[binary]`, `django-tasks`, `django-tasks-rq`, `django-storages[s3]` (or `boto3`), `django-cors-headers`, `django-modern-rest[msgspec,openapi]`, `channels`, `channels-redis`, `daphne`, `uvicorn`, `gunicorn`, `pyjwt`, `structlog`, `django-structlog`. Dev deps include `ruff`, `pyright`, `django-stubs`, `django-stubs-ext`.
+- `docker-compose.yml` defines local services only — `db`, `redis`, `minio`. No `web` and no `worker` service: Django and uvicorn run on the host via `uv run …`. Named volumes for `pgdata` and `miniodata`.
+- `pyproject.toml` runtime deps include `psycopg[binary]`, `django-storages[s3]` (or `boto3`), `django-cors-headers`, `django-modern-rest[msgspec,openapi]`, `channels`, `channels-redis`, `daphne`, `uvicorn`, `gunicorn`, `pyjwt`, `structlog`, `django-structlog`. Dev deps include `ruff`, `pyright`, `django-stubs`, `django-stubs-ext`.
 
 **Settings**
 - `config/settings/base.py` uses `env.NOTSET` for the prod branch of `SECRET_KEY` and `DATABASES`.
 - `[tool.pyright]` block in `pyproject.toml`. `django_stubs_ext.monkeypatch()` called from `config/settings/base.py` inside an `except ImportError: pass` guard.
 - `STORAGES["default"]` resolves to `S3Boto3Storage` when `AWS_STORAGE_BUCKET_NAME` is set; falls back to `FileSystemStorage` when empty.
 - `LOGGING` is at module scope (not inside `if DEBUG:`), with `json` and `console` formatters, `console` chosen when `DEBUG`.
-- `INSTALLED_APPS` includes `daphne` and `channels`. `ASGI_APPLICATION = "config.asgi.application"`. `CHANNEL_LAYERS["default"]["BACKEND"]` = `"channels_redis.core.RedisChannelLayer"` with `CONFIG` `hosts` built from `REDIS_URL` + the `/4` database (the channel layer's slot — cache is `/0`, RQ is `/3`).
+- `INSTALLED_APPS` includes `daphne` and `channels`. `ASGI_APPLICATION = "config.asgi.application"`. `CHANNEL_LAYERS["default"]["BACKEND"]` = `"channels_redis.core.RedisChannelLayer"` with `CONFIG` `hosts` built from `REDIS_URL` + the `/4` database.
 - `manage.py` defaults `DJANGO_SETTINGS_MODULE` to `config.settings.local`. `config/asgi.py` defaults to `config.settings.production`. `config/wsgi.py` remains at the `startproject` default (unchanged) — the deploy loads `asgi.py`, not `wsgi.py`.
 
 **ASGI + channels**
@@ -117,10 +114,6 @@ Verify these structural facts:
 
 **Logging**
 - `django_structlog.middlewares.RequestMiddleware` in `MIDDLEWARE` directly after `AuthenticationMiddleware`. `django_structlog` in `INSTALLED_APPS`. `pyproject.toml` runtime deps include `django-structlog`.
-
-**Tasks**
-- `INSTALLED_APPS` includes `django_rq` and `django_tasks` (`django_tasks_rq` is a backend module, not an app). `RQ_QUEUES` defined; `RQ = {"JOB_CLASS": "django_tasks_rq.Job"}` at module scope (not inside `RQ_QUEUES`).
-- A registered Django app has `apps.py` with `ready()` importing `tasks`, and a `tasks.py` defining at least one `@task`.
 
 **CORS + Devcontainer + Health**
 - `corsheaders` in `INSTALLED_APPS`; `corsheaders.middleware.CorsMiddleware` BEFORE `CommonMiddleware`.

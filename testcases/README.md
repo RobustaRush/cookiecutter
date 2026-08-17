@@ -82,7 +82,7 @@ Coverage rules. Use these to regenerate the suite when the skill changes.
    - Cache backend: `sqlite` / `redis` / `locmem` / `none` (sqlite appears in case 07, redis in case 03)
    - Redis: `yes` / `no`
    - Storage: `whitenoise` / `s3` / `none`
-   - Tasks: `celery` / `django-tasks-db` / `django-tasks-rq` / `none`
+   - Tasks: `celery` / `django.tasks` / `none`
    - Email: `console` / `smtp` / `mailpit` / `anymail` / `none`
    - Structured logging (`structlog`): `yes` / `no`
    - Analytics: `goatcounter` / `umami` / `shynet` / `ga4` / `none`

@@ -2,7 +2,7 @@
 
 Docs: <https://github.com/jazzband/django-redis>
 
-`django-redis` plugs Redis into Django's cache framework. Stock Django's local-memory / DB cache backends don't survive a restart and don't scale past one worker. Redis adds a shared, durable cache plus the broker Celery and django-tasks-rq need.
+`django-redis` plugs Redis into Django's cache framework. Stock Django's local-memory / DB cache backends don't survive a restart and don't scale past one worker. Redis adds a shared cache and the Celery broker.
 
 ## Install
 
