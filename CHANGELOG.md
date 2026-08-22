@@ -2,10 +2,11 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
-## 26.34.3 — 2026-08-22
+## 26.34.4 — 2026-08-22
 
 ### Changed
 - Replace `django-csp` with Django 6.1's built-in CSP middleware and settings. GA4 now uses the core nonce context variable; generated CSP remains production-only and starts in report-only mode.
+- `tasks-celery.md` — task examples pass serializable IDs, validate their targets, tolerate duplicate delivery, and retry only transient external failures.
 
 ### Testcases
 - Cases 07–09 assert the core CSP contract in their shared boot checks, so the skill and baseline arms can be compared on the same requirement.

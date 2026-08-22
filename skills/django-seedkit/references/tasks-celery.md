@@ -58,6 +58,10 @@ CELERY_TASK_TIME_LIMIT = 600       # hard kill; a hung task otherwise pins the w
 
 Add `@shared_task` functions to `<app>/tasks.py` inside a registered Django app — `app.autodiscover_tasks()` only scans `INSTALLED_APPS`, **not** `config/`. Use `from celery import shared_task` on each function. If the project has no domain app yet, the worker boots and idles; the user creates an app and adds `tasks.py` when they have real work to schedule.
 
+### Task contract
+
+A broker can deliver the same message more than once. Task arguments must therefore be JSON-serializable primitive values — pass a model primary key, not a model instance — and the task must look up and validate the target when it starts. Make each side effect idempotent: a duplicate delivery must not create a duplicate charge, email, or state transition. Retry only transient external failures; validation and business-rule failures are permanent.
+
 ## Local — run on the host
 
 ```sh
