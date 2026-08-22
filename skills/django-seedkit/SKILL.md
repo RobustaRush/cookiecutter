@@ -1,7 +1,6 @@
 ---
 name: django-seedkit
-version: 26.34.2
-description: Bootstrap a new Django project, or add components — auth (allauth, magic-link, axes, 2FA), payments (Stripe, dj-stripe), REST (django-modern-rest, django-bolt), Celery / Django Tasks, async views & WebSockets (ASGI, uvicorn worker, django-channels, channels-redis), Tailwind+DaisyUI, favicon, SEO meta tags + sitemap, HTML email templates, S3 storage, structlog, healthchecks, Docker, CI, deploy (VPS / Fly / GitHub-SSH), dbbackup, Sentry/Bugsink — to an existing Django codebase. Use whenever the user wants to scaffold Django, integrate a Django package, set up async / WebSockets, set up production deploys, wire CI/CD, or extend an existing Django project.
+description: Bootstrap a new Django project, add components — auth (allauth, magic-link, axes, 2FA), payments (Stripe, dj-stripe), REST (django-modern-rest, django-bolt), Celery / Django Tasks, async views & WebSockets (ASGI, uvicorn worker, django-channels, channels-redis), Tailwind+DaisyUI, favicon, SEO meta tags + sitemap, HTML email templates, S3 storage, structlog, healthchecks, Docker, CI, deploy (VPS / Fly / GitHub-SSH), dbbackup, Sentry/Bugsink — or implement and review conventional Django app code in an existing codebase. Use whenever the user wants to scaffold Django, add Django components or app features, set up async / WebSockets, set up production deploys, wire CI/CD, review Django code, or extend an existing Django project.
 ---
 
 ## How this skill works
@@ -10,6 +9,7 @@ Two paths:
 
 - **New project** (empty dir, only `.git/` or stub README): run §2 → §8 in order.
 - **Existing project** (has `pyproject.toml` and Django code): skip §2–§4. Read `references/existing-project.md` for the inventory workflow, then jump to §5/§6 and ask only about missing components.
+- **Feature implementation or code review in an existing project:** after the inventory, read `references/django-development.md` and work on the requested feature directly. Do not run the add-on questionnaire when the user has already specified the app work they want.
 
 Before either path, run `uv --version` to confirm uv is installed (`references/uv.md`).
 
@@ -119,6 +119,10 @@ For new projects: ask every question. For existing projects: only ask about comp
 Only ask when request handling is `asgi+channels` — Foundation §2.4 for new projects, the value `references/existing-project.md` §2 detected for existing ones. Otherwise skip the whole group.
 
 1. Channel layer: `channels-redis` / `InMemoryChannelLayer`. **Default `channels-redis`.** In-memory is dev-only — it doesn't span processes, so any horizontal scale or separate ASGI worker process breaks broadcast. → `references/realtime.md`
+
+#### 5.8 Application development — existing projects when requested
+
+For a requested model, view, form, template, admin surface, queryset optimisation, or Django code review, use `references/django-development.md`. It is an implementation and review guide, not another optional package choice: preserve the project's conventions and change only the requested surface.
 
 ### 6. Production & Deploy — one question at a time
 

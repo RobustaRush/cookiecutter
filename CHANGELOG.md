@@ -2,6 +2,11 @@
 
 Versioned `YY.WW.D` — `date +%y.%V.%u` — year / ISO week / ISO weekday. One section per day; all of a day's commits collapse into one block. Trim to ≤ 200 lines; git keeps the rest.
 
+## 26.34.3 — 2026-08-22
+
+### Added
+- `django-development.md` — a focused route for requested feature work and code review in existing projects: safe data modelling, permission-scoped views and forms, templates, admin query hygiene, and proportionate completion checks. This complements the add-on workflow without importing a second general-purpose Django skill.
+
 ## 26.34.2 — 2026-08-17
 
 ### Changed
