@@ -38,7 +38,7 @@ Add-ons:
 
 Production setup:
   - apply Django security settings
-  - CSP via `django-csp`: yes
+  - CSP using Django's built-in CSP support: yes
   - error reporting: Bugsink (self-hosted, sentry-sdk DSN)
   - GDPR: PII scrubbing in error reports, retention defaults, user data export/delete
   - CI: GitHub Actions test workflow
@@ -61,6 +61,9 @@ for i in 1 2 3 4 5; do curl -sf http://127.0.0.1:8000/admin/login/ > /dev/null &
 [ -n "$up" ] || { echo "BOOT CHECK FAILED: runserver never came up"; kill "$RUNSERVER_PID"; exit 1; }
 test "$(curl -sf http://127.0.0.1:8000/healthz)" = "ok"
 test "$(curl -sf http://127.0.0.1:8000/readyz)" = "ready"
+! rg -q 'django-csp' pyproject.toml
+rg -q 'django.middleware.csp.ContentSecurityPolicyMiddleware' config/settings/production.py
+rg -q 'SECURE_CSP' config/settings/production.py
 docker build --target prod -t 09-ssh-deploy:test .
 kill "$RUNSERVER_PID"
 docker compose down -v
@@ -76,13 +79,13 @@ Verify these structural facts:
 **Foundation**
 - Files present: `pyproject.toml`, `manage.py`, `config/settings/{base,local,production,test}.py`, `Dockerfile` (multi-stage), `docker-compose.yml` (local services only — `db`, `redis`; no `web` / `worker`), `deploy/docker-compose.prod.yml`, `deploy/.env.prod.example`, `mise.toml`, `.github/workflows/{test.yml,deploy.yml}`, `.env`, `.env.example`, `.dockerignore`, `.gitignore`. No `Dockerfile.dev`, no `docker-compose.override.yml`.
 - `mise.toml` has `[tasks.deploy-migrate]` and `[tasks.deploy]` (with `depends = ["deploy-migrate"]`) targeting `deploy/docker-compose.prod.yml`, both passing `--env-file deploy/.env.prod`.
-- `pyproject.toml` runtime deps include `psycopg[binary]`, `django-csp`, `django-dbbackup`, `django-storages[s3]` (or `boto3`), `sentry-sdk`, `structlog`, `django-structlog`, `gunicorn`. Dev deps include `pytest`, `pytest-django`, `ruff`.
+- `pyproject.toml` runtime deps include `psycopg[binary]`, `django-dbbackup`, `django-storages[s3]` (or `boto3`), `sentry-sdk`, `structlog`, `django-structlog`, `gunicorn`. **No** `django-csp`. Dev deps include `pytest`, `pytest-django`, `ruff`.
 - `pyproject.toml` does NOT list `django-axes`, `django-allauth`, `django-mail-auth`, or anymail/email packages — auth = none, email = none.
 
 **Settings**
 - `config/settings/base.py` uses `env.NOTSET` for the prod branch of `SECRET_KEY` and `DATABASES`.
 - Security settings (`SECURE_SSL_REDIRECT`, HSTS, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `CSRF_TRUSTED_ORIGINS`, `SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]`) live in `production.py` only.
-- `csp.middleware.CSPMiddleware` and `CONTENT_SECURITY_POLICY` in `production.py` only. `script-src` includes the Umami host (resolved from env at runtime). No `'unsafe-inline'` in `script-src`.
+- `django.middleware.csp.ContentSecurityPolicyMiddleware` and `SECURE_CSP` in `production.py` only. `script-src` includes the Umami host (resolved from env at runtime). No `CSP.UNSAFE_INLINE` in `script-src`.
 - `INSTALLED_APPS` in `base.py` does NOT contain `axes`, `allauth`. `dbbackup` is added only inside the `if not DEBUG:` block in `production.py`.
 - `production.py` `if not DEBUG:` block adds `dbbackup` to `INSTALLED_APPS`, sets `DBBACKUP_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"` and `DBBACKUP_STORAGE_OPTIONS` reading bucket/key/secret from env. `DBBACKUP_BUCKET` listed in `.env.example`.
 

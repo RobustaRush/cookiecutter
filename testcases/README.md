@@ -51,6 +51,12 @@ The reviewer prompt is short and identical across cases: verify the listed struc
 
 Don't add per-case lists of the skill's intentional design decisions. The quote-the-substring rule and the boot-blocker filter already keep the reviewer off them, and such lists go stale faster than the skill does.
 
+### Comparing a skill change with the baseline
+
+When a reference changes a generated package or framework API, put the resulting observable contract in the case's `## Boot check`. Both `run-tests.sh` and `run-baseline.sh` execute that block, so the result is arm-neutral. Do not put it only in `## Review`: the independent review is deliberately a skill-arm phase.
+
+Run the affected case in both arms with the same CLI and compare boot outcome, score, and build repairs. Do not claim the skill is better until both results exist. For the Django CSP migration, cases 07–09 require the built-in middleware and settings and reject the obsolete `django-csp` dependency.
+
 ## Requirements for the test set
 
 Coverage rules. Use these to regenerate the suite when the skill changes.

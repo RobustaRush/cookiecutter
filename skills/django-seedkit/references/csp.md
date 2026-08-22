@@ -1,122 +1,105 @@
-# Content Security Policy — django-csp
+# Content Security Policy — Django 6.1
 
-Docs: <https://django-csp.readthedocs.io/>
+Docs: <https://docs.djangoproject.com/en/6.1/howto/csp/>
 
-Layer **on top of** `references/security.md`. Django's security settings cover headers like HSTS, X-Frame-Options, secure cookies; CSP is a separate header that browsers enforce against script / style / image sources. Production-only — too strict for `runserver` without careful tuning.
-
-Apply only when the user said yes to security AND chose to harden CSP.
-
-## Install
-
-```sh
-uv add django-csp
-```
+Layer this on top of `references/security.md`. Django 6.1 includes CSP support, so do not add `django-csp`. Apply it only when the user selected security and CSP.
 
 ## `production.py` only
 
-Append the middleware — don't re-declare `MIDDLEWARE`. Re-declaration drops anything `base.py` inserted (e.g. WhiteNoise after `SecurityMiddleware`):
+Append the middleware; do not re-declare `MIDDLEWARE`, which would drop additions from `base.py` such as WhiteNoise.
 
 ```python
-MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
+from django.utils.csp import CSP
 
-CONTENT_SECURITY_POLICY = {
-    'DIRECTIVES': {
-        'default-src': ("'self'",),
-        'script-src': ("'self'",),
-        'style-src': ("'self'", "'unsafe-inline'"),  # tighten by removing unsafe-inline once styles are externalized
-        'img-src': ("'self'", 'data:'),
-        'font-src': ("'self'",),
-        'connect-src': ("'self'",),
-        'frame-ancestors': ("'none'",),
-        'base-uri': ("'self'",),
-        'form-action': ("'self'",),
-    },
+MIDDLEWARE = [*MIDDLEWARE, "django.middleware.csp.ContentSecurityPolicyMiddleware"]
+
+SECURE_CSP = {
+    "default-src": [CSP.SELF],
+    "script-src": [CSP.SELF],
+    "style-src": [CSP.SELF, CSP.UNSAFE_INLINE],  # Admin needs inline styles.
+    "img-src": [CSP.SELF, "data:"],
+    "font-src": [CSP.SELF],
+    "connect-src": [CSP.SELF],
+    "frame-ancestors": [CSP.NONE],
+    "base-uri": [CSP.SELF],
+    "form-action": [CSP.SELF],
 }
 ```
 
-## Common per-add-on overrides
+## Per-add-on sources
 
-Append every listed host to every listed directive when the corresponding add-on is active:
+Add a host only when its add-on is selected. Extend directives instead of replacing them: selected add-ons can need the same directive.
 
-| Add-on | Directive | Add |
+| Add-on | Directives | Source |
 |---|---|---|
-| `django-allauth` social providers | `connect-src`, `img-src` | provider domains (Google: `accounts.google.com`, etc.) |
+| `django-allauth` social providers | `connect-src`, `img-src` | provider domains, such as `https://accounts.google.com` |
 | `analytics-ga4` | `script-src`, `connect-src`, `img-src` | `https://www.googletagmanager.com`, `https://www.google-analytics.com` |
-
-GA4 expanded — both hosts go into all three directives, and `script-src` also takes the `NONCE` sentinel for the inline `gtag('config', ...)` block (see below):
-
-```python
-from csp.constants import NONCE
-
-'script-src':  ("'self'", NONCE, "https://www.googletagmanager.com", "https://www.google-analytics.com"),
-'connect-src': ("'self'", "https://www.googletagmanager.com", "https://www.google-analytics.com"),
-'img-src':     ("'self'", 'data:', "https://www.googletagmanager.com", "https://www.google-analytics.com"),
-```
-
-More rows:
-
-| Add-on | Directive | Add |
-|---|---|---|
-| `analytics-umami` (self-hosted) | `script-src`, `connect-src` | the Umami host |
+| `analytics-umami` | `script-src`, `connect-src` | `ANALYTICS_HOST` |
 | `analytics-goatcounter` | `script-src`, `connect-src` | `https://gc.zgo.at` |
-| `storage-s3` (uploaded media in `<img>`) | `img-src` | the S3 / CDN host |
-| `error-reporting-sentry` (browser SDK) | `connect-src`, `script-src` | the Sentry / GlitchTip ingest host |
-| `django-tailwind-cli` | nothing (bundled CSS served from `'self'`) | — |
+| `storage-s3` | `img-src` | S3 or CDN host when media appears in `<img>` |
+| `error-reporting-sentry` | `connect-src`, `script-src` | Sentry or GlitchTip ingest host |
 
-Umami host is env-driven — read it in `production.py` so the directive matches `ANALYTICS_HOST`:
+For GA4, the inline initialization block needs a nonce and its context processor:
 
 ```python
-# ANALYTICS_HOST comes from `from .base import *`
-_UMAMI = (ANALYTICS_HOST,) if ANALYTICS_HOST else ()
-CONTENT_SECURITY_POLICY["DIRECTIVES"]["script-src"]  = ("'self'", *_UMAMI)
-CONTENT_SECURITY_POLICY["DIRECTIVES"]["connect-src"] = ("'self'", *_UMAMI)
+SECURE_CSP["script-src"] += [
+    CSP.NONCE,
+    "https://www.googletagmanager.com",
+    "https://www.google-analytics.com",
+]
+SECURE_CSP["connect-src"] += [
+    "https://www.googletagmanager.com",
+    "https://www.google-analytics.com",
+]
+SECURE_CSP["img-src"] += [
+    "https://www.googletagmanager.com",
+    "https://www.google-analytics.com",
+]
+TEMPLATES[0]["OPTIONS"]["context_processors"] += [
+    "django.template.context_processors.csp",
+]
 ```
 
-Don't speculatively add hosts — only when the matching add-on is in scope.
-
-## Inline scripts: use a nonce, not `'unsafe-inline'`
-
-Third-party snippets that need an inline init block (GA4 `gtag('config', ...)`, etc.) carry `nonce="{{ request.csp_nonce }}"` in the template, and the matching directive carries the `NONCE` sentinel:
+For env-driven Umami:
 
 ```python
-from csp.constants import NONCE
+_UMAMI = [ANALYTICS_HOST] if ANALYTICS_HOST else []
+SECURE_CSP["script-src"] += _UMAMI
+SECURE_CSP["connect-src"] += _UMAMI
+```
 
-CONTENT_SECURITY_POLICY = {
-    'DIRECTIVES': {
-        # ...
-        'script-src': ("'self'", NONCE),
-    },
+## Inline scripts
+
+Use a nonce for an inline script, never `'unsafe-inline'` in `script-src`:
+
+```html
+<script nonce="{{ csp_nonce }}">
+```
+
+The nonce works only when the directive contains `CSP.NONCE` and `django.template.context_processors.csp` is configured. The middleware then creates one nonce per response and adds the matching source expression to the header.
+
+## Report-only first
+
+For the first deploy, use `SECURE_CSP_REPORT_ONLY` instead of `SECURE_CSP` so violations are visible before they block assets:
+
+```python
+SECURE_CSP_REPORT_ONLY = {
+    "default-src": [CSP.SELF],
+    "script-src": [CSP.SELF],
+    "style-src": [CSP.SELF, CSP.UNSAFE_INLINE],
+    "img-src": [CSP.SELF, "data:"],
+    "font-src": [CSP.SELF],
+    "connect-src": [CSP.SELF],
+    "frame-ancestors": [CSP.NONE],
+    "base-uri": [CSP.SELF],
+    "form-action": [CSP.SELF],
 }
 ```
 
-django-csp swaps `NONCE` for a fresh `'nonce-...'` per response. Without the sentinel the template still renders a nonce and the header carries none, so the browser refuses the inline block.
-
-## Report-Only first
-
-For the first deploy after adding CSP, prefer report-only mode so existing pages don't break:
-
-Use `CONTENT_SECURITY_POLICY_REPORT_ONLY` in place of `CONTENT_SECURITY_POLICY` above — django-csp sends both headers if both settings are present, so only one of the two names should exist in `production.py` at a time:
-
-```python
-CONTENT_SECURITY_POLICY_REPORT_ONLY = {
-    'DIRECTIVES': {
-        'default-src': ("'self'",),
-        'script-src': ("'self'",),
-        'style-src': ("'self'", "'unsafe-inline'"),  # tighten by removing unsafe-inline once styles are externalized
-        'img-src': ("'self'", 'data:'),
-        'font-src': ("'self'",),
-        'connect-src': ("'self'",),
-        'frame-ancestors': ("'none'",),
-        'base-uri': ("'self'",),
-        'form-action': ("'self'",),
-    },
-}
-```
-
-Once the logs are clean, rename `CONTENT_SECURITY_POLICY_REPORT_ONLY` to `CONTENT_SECURITY_POLICY` to start enforcing.
+Once the reports are clean, rename it to `SECURE_CSP`.
 
 ## Pitfalls
 
-- `'unsafe-inline'` in `script-src` defeats the entire point. Avoid it. If a third-party widget requires it, isolate the widget in an iframe with a separate, narrower CSP.
-- Admin uses inline styles — `'unsafe-inline'` in `style-src` is currently necessary for `/admin/` to render correctly. Acknowledge this as a known concession.
-- CSP doesn't apply to API responses (`Content-Type: application/json`) — browsers only enforce it on document responses. REST endpoints don't need exemption logic.
+- Do not add `'unsafe-inline'` to `script-src`. If a third-party widget needs it, isolate that widget in a narrower iframe policy.
+- CSP applies to document responses, not JSON API responses; REST endpoints need no exemption.
+- A response with a nonce must not be served from a cache that reuses an HTML body with a different CSP header.

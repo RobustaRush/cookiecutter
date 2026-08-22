@@ -38,7 +38,7 @@ Add-ons:
 
 Production setup:
   - apply Django security settings (HSTS, secure cookies, X-Frame, SSL redirect)
-  - CSP via `django-csp`: yes
+  - CSP using Django's built-in CSP support: yes
   - error reporting: Sentry SaaS (sentry-sdk)
   - CI: GitHub Actions test workflow
   - deploy target: VPS (Docker + Caddy)
@@ -63,6 +63,9 @@ curl -sf http://127.0.0.1:8000/accounts/login/ > /dev/null
 test "$(curl -sf http://127.0.0.1:8000/healthz)" = "ok"
 test "$(curl -sf http://127.0.0.1:8000/readyz)" = "ready"
 kill "$RUNSERVER_PID"
+! rg -q 'django-csp' pyproject.toml
+rg -q 'django.middleware.csp.ContentSecurityPolicyMiddleware' config/settings/production.py
+rg -q 'SECURE_CSP' config/settings/production.py
 uv run pyright
 # Pre-commit hooks on the no-template path: uv-lock + django-upgrade + ruff.
 # --files, not --all-files: no per-project .git, so --all-files reaches sibling projects.
@@ -86,7 +89,7 @@ Verify these structural facts:
 - Files present: `pyproject.toml`, `manage.py`, `config/settings/{base,local,production,test}.py`, `config/routers.py`, `Dockerfile` (multi-stage), `deploy/docker-compose.prod.yml`, `deploy/Caddyfile`, `litestream.yml`, `entrypoint.sh`, `mise.toml`, `.github/workflows/test.yml`, `.pre-commit-config.yaml`, `.env`, `.env.example`, `.dockerignore`, `.gitignore`. No `Dockerfile.dev`, no root `docker-compose.yml` (dev runs on the host; SQLite needs no local services).
 - `.pre-commit-config.yaml` declares hook ids `ruff-check`, `ruff-format`, `uv-lock`, `django-upgrade`, `djade`, and `djhtml`. No `rustywind` hook — this project has no Tailwind.
 - `mise.toml` has `[tasks.deploy]` running `docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d` and **no** `deploy-migrate` task — the SQLite + Litestream `entrypoint.sh` runs `migrate --noinput` on every boot (`dev-tasks.md` exception).
-- `pyproject.toml` runtime deps include `django-environ`, `whitenoise`, `django-allauth[mfa]`, `django-axes`, `django-csp`, `sentry-sdk`, `structlog`, `django-structlog`, `gunicorn`. **No** `psycopg`, `celery`, `redis`, `django-dbbackup`, or a standalone Django Tasks package. Dev deps include `pytest`, `pytest-django`, `pyright`, `django-stubs`, `django-stubs-ext`, `ruff`, `pre-commit`.
+- `pyproject.toml` runtime deps include `django-environ`, `whitenoise`, `django-allauth[mfa]`, `django-axes`, `sentry-sdk`, `structlog`, `django-structlog`, `gunicorn`. **No** `django-csp`, `psycopg`, `celery`, `redis`, `django-dbbackup`, or a standalone Django Tasks package. Dev deps include `pytest`, `pytest-django`, `pyright`, `django-stubs`, `django-stubs-ext`, `ruff`, `pre-commit`.
 
 **Settings split + SQLite mini-prod**
 - `manage.py` defaults `DJANGO_SETTINGS_MODULE` to `config.settings.local`; `wsgi.py`/`asgi.py` to `config.settings.production`.
@@ -94,7 +97,7 @@ Verify these structural facts:
 - `production.py` sets `DATABASES["default"]["OPTIONS"]` with the SQLite mini-prod block: `transaction_mode = "IMMEDIATE"`, `timeout = 5`, and an `init_command` containing `PRAGMA journal_mode=WAL;`, `PRAGMA synchronous=NORMAL;`, `PRAGMA mmap_size=...`, `PRAGMA cache_size=...`.
 - `base.py` defines `DATABASES["cache"]` (env-driven path, defaulting under `BASE_DIR`), `CACHES["default"]` using `django.core.cache.backends.db.DatabaseCache` with `LOCATION = "cache_table"`, and `DATABASE_ROUTERS = ["config.routers.CacheRouter"]`. `production.py` adds `DATABASES["cache"]["OPTIONS"] = DATABASES["default"]["OPTIONS"]`. Prod `.env` sets `CACHE_DB_PATH=/data/cache.sqlite3`.
 - `config/routers.py` defines `CacheRouter` routing reads/writes/migrations for `app_label == "django_cache"` to the `cache` database.
-- Security settings (`SECURE_SSL_REDIRECT`, HSTS, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `CSRF_TRUSTED_ORIGINS`, `SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]`) live in `production.py` only. `csp.middleware.CSPMiddleware` and `CONTENT_SECURITY_POLICY` in `production.py` only — not in `base.py`/`local.py`.
+- Security settings (`SECURE_SSL_REDIRECT`, HSTS, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `CSRF_TRUSTED_ORIGINS`, `SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]`) live in `production.py` only. `django.middleware.csp.ContentSecurityPolicyMiddleware` and `SECURE_CSP` in `production.py` only — not in `base.py`/`local.py`.
 - `WhiteNoiseMiddleware` inserted directly after `SecurityMiddleware` in `MIDDLEWARE`.
 
 **Custom user + auth + MFA**

@@ -1,6 +1,8 @@
 ---
 name: django-seedkit
 description: Bootstrap a new Django project, or add components — auth (allauth, magic-link, axes, 2FA), payments (Stripe, dj-stripe), REST (django-modern-rest, django-bolt), Celery / Django Tasks, async views & WebSockets (ASGI, uvicorn worker, django-channels, channels-redis), Tailwind+DaisyUI, favicon, SEO meta tags + sitemap, HTML email templates, S3 storage, structlog, healthchecks, Docker, CI, deploy (VPS / Fly / GitHub-SSH), dbbackup, Sentry/Bugsink — to an existing Django codebase. Use whenever the user wants to scaffold Django, integrate a Django package, set up async / WebSockets, set up production deploys, wire CI/CD, or extend an existing Django project.
+metadata:
+  version: 26.34.3
 ---
 
 ## How this skill works
@@ -122,7 +124,7 @@ Only ask when request handling is `asgi+channels` — Foundation §2.4 for new p
 ### 6. Production & Deploy — one question at a time
 
 1. Security settings: yes / no. **Default no.** → `references/security.md`
-   - If yes: Content Security Policy via `django-csp`? **Default yes.** → `references/csp.md`
+   - If yes: Content Security Policy using Django's built-in CSP support? **Default yes.** → `references/csp.md`
 2. Health check endpoints (`/healthz`, `/readyz`): yes / no. **Default yes.** Apply before the deploy target so the deploy reference can wire the matching probe block in compose / `fly.toml` / nginx. → `references/healthcheck.md`
 3. Error reporting: `bugsink` / `sentry` / `glitchtip` / `none`. **Default none.** → `references/error-reporting.md`
 4. GDPR helpers: yes / no. **Default no.** → `references/gdpr.md`

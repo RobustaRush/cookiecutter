@@ -40,7 +40,7 @@ Add-ons:
 
 Production setup:
   - apply Django security settings
-  - CSP via `django-csp`: yes
+  - CSP using Django's built-in CSP support: yes
   - error reporting: GlitchTip via sentry-sdk
   - GDPR: PII scrubbing in error reports, retention defaults, user data export/delete views
   - CI: GitHub Actions test workflow
@@ -75,6 +75,12 @@ DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev --por
 BOLT_PID=$!
 sleep 2
 curl -sf http://127.0.0.1:8001/users/1 || true
+! rg -q 'django-csp' pyproject.toml
+rg -q 'django.middleware.csp.ContentSecurityPolicyMiddleware' config/settings/production.py
+rg -q 'SECURE_CSP' config/settings/production.py
+rg -q 'CSP.NONCE' config/settings/production.py
+rg -q 'django.template.context_processors.csp' config/settings/production.py
+rg -q 'nonce="{{ csp_nonce }}"' templates/_analytics.html
 uv run pyright
 docker build --target prod -t 08-fly-app:test .
 docker run --rm 08-fly-app:test python --version | grep -q '3\.12'
@@ -93,14 +99,14 @@ Verify these structural facts:
 **Foundation**
 - Files present: `pyproject.toml`, `manage.py`, `config/settings/{base,local,production,bolt,test}.py`, `config/urls.py`, `config/urls_bolt.py`, `Dockerfile` (multi-stage), `docker-compose.yml` (local services only — `db`, `redis`, `minio`; no `web` / `worker`), `fly.toml`, `mise.toml`, `.github/workflows/test.yml`, `.env`, `.env.example`, `.dockerignore`, `.gitignore`. No `Dockerfile.dev`, no `docker-compose.override.yml`.
 - `mise.toml` has `[tasks.deploy]` running `fly deploy`.
-- `pyproject.toml` runtime deps include `psycopg[binary]`, `celery[redis]` (or `celery` + `redis`), `django-storages[s3]`, `django-mail-auth`, `django-axes`, `django-csp`, `django-bolt`, `msgspec`, `django-anymail[postmark]`, `sentry-sdk`, `gunicorn`. Dev deps include `pytest`, `pytest-django`, `pyright`, `django-stubs`, `django-stubs-ext`, `ruff`.
+- `pyproject.toml` runtime deps include `psycopg[binary]`, `celery[redis]` (or `celery` + `redis`), `django-storages[s3]`, `django-mail-auth`, `django-axes`, `django-bolt`, `msgspec`, `django-anymail[postmark]`, `sentry-sdk`, `gunicorn`. **No** `django-csp`. Dev deps include `pytest`, `pytest-django`, `pyright`, `django-stubs`, `django-stubs-ext`, `ruff`.
 
 **Settings (split + bolt)**
 - `config/settings/base.py` uses `env.NOTSET` for the prod branch of `SECRET_KEY` and `DATABASES`. `[tool.pyright]` block in `pyproject.toml`. `django_stubs_ext.monkeypatch()` called from `base.py` inside an `except ImportError: pass` guard.
 - `config/settings/bolt.py` imports from `base` and strips `SessionMiddleware`, `MessageMiddleware`, `CsrfViewMiddleware`, `AuthenticationMiddleware`, `WhiteNoiseMiddleware` from `MIDDLEWARE`, and `django.contrib.admin`, `django.contrib.sessions`, `django.contrib.messages`, `django.contrib.staticfiles` from `INSTALLED_APPS`. Sets `TEMPLATES = []` and `ROOT_URLCONF = "config.urls_bolt"`.
 - `config/urls_bolt.py` contains `urlpatterns: list = []` (BoltAPI auto-discovers; no `.urls` to mount). Does NOT import `django.contrib.admin` or `accounts`.
 - Security settings in `production.py` only, including `SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]`.
-- `csp.middleware.CSPMiddleware` in `production.py`'s `MIDDLEWARE` only. `CONTENT_SECURITY_POLICY['DIRECTIVES']['script-src']` includes `https://www.googletagmanager.com` and `https://www.google-analytics.com`. `connect-src` and `img-src` include `https://www.google-analytics.com`. No `'unsafe-inline'` in `script-src`.
+- `django.middleware.csp.ContentSecurityPolicyMiddleware` in `production.py`'s `MIDDLEWARE` only. `SECURE_CSP["script-src"]` includes `CSP.NONCE`, `https://www.googletagmanager.com`, and `https://www.google-analytics.com`; `django.template.context_processors.csp` is configured. `connect-src` and `img-src` include `https://www.google-analytics.com`. No `CSP.UNSAFE_INLINE` in `script-src`.
 
 **Bolt API**
 - `api/api.py` defines `api = BoltAPI()` and a `@api.get("/users/{user_id}")` async handler returning a `msgspec.Struct` populated via `await User.objects.aget(id=user_id)`.
@@ -109,7 +115,7 @@ Verify these structural facts:
 **Auth + analytics + GDPR + Sentry**
 - `INSTALLED_APPS` lists `mailauth.contrib.admin` BEFORE `django.contrib.admin`. `MailAuthBackend` in `AUTHENTICATION_BACKENDS`. `accounts/` URL include with `mailauth` namespace.
 - `MIDDLEWARE` ends with `axes.middleware.AxesMiddleware`. `AUTHENTICATION_BACKENDS` starts with `axes.backends.AxesBackend`. `AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler'` set in `production.py`.
-- GA4 snippet in `templates/_analytics.html` (or equivalent) using `{{ ANALYTICS_ID }}` from a context processor; included from `templates/base.html`.
+- GA4 snippet in `templates/_analytics.html` (or equivalent) uses `{{ ANALYTICS_ID }}` and `nonce="{{ csp_nonce }}"`; it is included from `templates/base.html`.
 - `sentry_sdk.init(...)` called from `production.py` only with `before_send` PII scrubber, `send_default_pii=False`.
 - GDPR scaffolding present: `data_export` / `data_delete` views or management commands.
 
