@@ -1,39 +1,16 @@
-# Django application development
+# Django feature review
 
-Use this when extending or reviewing an existing Django app: models and migrations, URLs and views, forms, templates, admin, query performance, or tests. First follow the inventory in `existing-project.md`; preserve the installed Django version, test runner, settings layout, URL style, and project conventions. Do not introduce a package or restructure settings merely to follow this guide.
+Use this after the inventory in `existing-project.md` when implementing or reviewing a requested feature. Preserve the project's installed Django version, conventions, and configured test runner. This is a risk check, not a second Django tutorial or a reason to add packages or restructure settings.
 
-## Data model and migrations
+## Failure-prone boundaries
 
-- Point relations to the configured user model with `settings.AUTH_USER_MODEL`; never import Django's concrete `User` model.
-- Use `TextChoices` or `IntegerChoices` for stable finite states. Use `DecimalField`, not `FloatField`, for money. `blank=True` controls form validation; `null=True` controls database storage and is usually unnecessary for text fields.
-- Put invariants that must survive every write path in database constraints. Add indexes only for demonstrated query shapes; name explicit constraints and indexes so migrations stay stable.
-- Choose `on_delete` for the domain, not by habit: `PROTECT`/`RESTRICT` for records that must not disappear, `SET_NULL` only on a nullable relation, and `CASCADE` only when deletion really owns the child.
-- Create and inspect migrations before applying them. For a mature or production-backed table, flag locking, backfills, table rewrites, and non-null additions before running the migration.
+- **Authorization:** scope every object lookup and form choice to what the requesting user may access. A global `get_object_or_404(Model, pk=...)` followed by a later permission check can expose an object's existence or data. A `ModelChoiceField` must likewise be restricted to permitted objects.
+- **HTTP semantics:** never mutate data from a GET request. Validate POST input through a form with an explicit field allowlist, then redirect on success; do not accept `fields = "__all__"` for a public form.
+- **Relations:** use `settings.AUTH_USER_MODEL` for new user relations, rather than importing the concrete `User` class. This avoids breaking projects that selected a custom user model before their first migration.
+- **Async:** in an `async def` view, use the project's async ORM pattern or an adapter for synchronous work. A direct synchronous ORM call raises `SynchronousOnlyOperation`.
+- **Rendered collections:** if a view or admin list reads related objects inside a loop, select or prefetch those explicit relations and add a query-count test when the path is material.
+- **Migrations:** inspect data migrations and schema changes on established tables before applying them; call out destructive operations, table rewrites, non-null additions, and locks rather than treating them as routine.
 
-## URLs, views, and forms
+## Completion evidence
 
-- Give each app URLconf an `app_name` and name every pattern. Use `reverse()`/`reverse_lazy()` and `{% url %}` rather than literal URLs.
-- Scope every object and queryset to the requesting user's permissions before lookup. `get_object_or_404(scoped_queryset, ...)` is safer than fetching globally and checking permission later.
-- Do not change state in a GET request. After a successful POST, redirect. Use Django forms for user input; `ModelForm.Meta.fields` must be explicit, never `"__all__"`.
-- Limit a `ModelChoiceField` or form queryset to objects the current user may select. Validate cross-field rules in `clean()` and use `cleaned_data` after `is_valid()`.
-- Use async views only when awaited I/O makes them worthwhile. Do not call synchronous ORM code directly from an async view; follow the project's Django-version-appropriate async ORM or adapter pattern.
-
-## Templates and admin
-
-- Extend the project base template, include `{% csrf_token %}` in every POST form, and rely on Django autoescaping. Never use `safe` or `mark_safe()` for user-controlled content.
-- Register useful admin surfaces with a `ModelAdmin`: explicit `list_display`, appropriate filters and search fields, and `autocomplete_fields` for large related tables. A bare registration is acceptable only for a genuinely trivial internal model.
-- Optimise admin and list views when they display relations: use explicit `select_related()` for foreign keys and `prefetch_related()` for collections. Avoid broad calls with no field names.
-
-## Tests and completion checks
-
-Test the behaviour changed, including permission boundaries and invalid form input—not just the happy path. Use the runner already configured by the project. Add a focused query-count test where a new list/admin view renders related objects.
-
-After code that changes models, settings, templates, or URLs, run the narrowest relevant checks, then the existing suite when feasible:
-
-```sh
-uv run manage.py makemigrations --check --dry-run
-uv run manage.py check
-# then the project's configured test command
-```
-
-For production-setting changes, also run `uv run manage.py check --deploy` with the project's production settings and required safe placeholder environment. Read `references/ci.md` for the existing CI contract instead of adding a second workflow.
+Add tests for changed permission boundaries and invalid input. For model changes, run `uv run manage.py makemigrations --check --dry-run`; then run the project's configured checks and test command. Existing CI guidance, including production checks, remains in `references/ci.md`.
